@@ -1,0 +1,16 @@
+
+Local Search - EHC Heuristic Optimization:
+    - After each failed EHC attempt
+        - Scale any successors that are worst than current best H down. Scale Factor 10% per round
+        - If the succ is strictly better, multiply it by factor then check again.
+        - If the succ is not as good, divide it by factor then check again.
+        - The H value is updated each time.
+        - The number of rounds required = we can use the current H as a guidance.
+    - However by considering all actions applicable might still not be a good case.
+        - Successor Selection / HelpfulFilters
+        - Successor Selection:
+            Each successor could be put to a RPG test, to see if it can find a plan from those successors
+    - If successors.contain(Initial State), terminate immediately to avoid loop or at least filter it out (needs more thoughts)
+    - If 2 or more H that is strictly better where H' = H < current H, then we can run EHC multiple times on those H.
+        We can include a max, just incase the state spaces are too big.
+    
