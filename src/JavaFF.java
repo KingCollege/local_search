@@ -43,8 +43,10 @@ import javaff.planning.NullFilter;
 import javaff.scheduling.Scheduler;
 import javaff.scheduling.JavaFFScheduler;
 import javaff.search.Search;
+import javaff.search.SimulatedAnnealing;
 import javaff.search.BestFirstSearch;
 import javaff.search.EnforcedHillClimbingSearch;
+import javaff.search.HeuristicModificationSearch;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -186,17 +188,27 @@ public class JavaFF {
 
 	public static State performFFSearch(TemporalMetricState initialState) {
 
-		// Implementation of standard FF-style search
+		// EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
+		// EHC.setFilter(HelpfulFilter.getInstance());
+		// State goalState = EHC.search();
 
-		infoOutput.println("Performing search as in FF - first considering EHC with only helpful actions");
+			//HeuristicModificationSearch failed miserably
+		// HeuristicModificationSearch HMS = new HeuristicModificationSearch(initialState);
+		// HMS.setFilter(HelpfulFilter.getInstance()); 
+		// infoOutput.println("Initial Run: -------------------------------------------");
+		// State goalState = HMS.search();
+		// if (goalState == null){
+		// 	for(int i = 0; i < 20; i++){
+		// 		infoOutput.println("Round " + i + " ------------------------------------------------------");
+		// 		goalState = HMS.search();
+		// 		if (goalState != null)
+		// 			return goalState;
+		// 	}
+		// }
 
-		// Now, initialise an EHC searcher
-		EnforcedHillClimbingSearch EHCS = new EnforcedHillClimbingSearch(initialState);
-
-		EHCS.setFilter(HelpfulFilter.getInstance()); // and use the helpful actions neighbourhood
-
-		// Try and find a plan using EHC
-		State goalState = EHCS.search();
+		SimulatedAnnealing SAS = new SimulatedAnnealing(initialState);
+		SAS.setFilter(HelpfulFilter.getInstance());
+		State goalState = SAS.search();
 
 		if (goalState == null) // if we can't find one
 		{

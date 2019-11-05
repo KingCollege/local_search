@@ -1,16 +1,25 @@
+Successor Selector Ideas:
+    - Look Ahead
+        - The selector will look at the successors and look a few steps a head of time to see if any of their following
+        successors will improve overall.
+        - Helpfulfilter can be used along with it to prune some successors that are not applicable
 
-Local Search - EHC Heuristic Optimization:
-    - After each failed EHC attempt
-        - Scale any successors that are worst than current best H down. Scale Factor 10% per round
-        - If the succ is strictly better, multiply it by factor then check again.
-        - If the succ is not as good, divide it by factor then check again.
-        - The H value is updated each time.
-        - The number of rounds required = we can use the current H as a guidance.
-    - However by considering all actions applicable might still not be a good case.
-        - Successor Selection / HelpfulFilters
-        - Successor Selection:
-            Each successor could be put to a RPG test, to see if it can find a plan from those successors
-    - If successors.contain(Initial State), terminate immediately to avoid loop or at least filter it out (needs more thoughts)
-    - If 2 or more H that is strictly better where H' = H < current H, then we can run EHC multiple times on those H.
-        We can include a max, just incase the state spaces are too big.
+Multi Start Local Search (TO DO):
+    - Create instances of different search strategies and run them in parallel in order to find a solution
+    - Incoperate Multi Start with Iterated Local search which can be used to improve a local search algorithm to
+    find a solution or to improve on a solution.
+    
+Simulated Annealing Search (Implemented)
+    - Generate initial solution using EHCS (althought i do plan on using something else)
+        - Neighbour generation is based on successors, and closed states (second chance) but only
+        the current state gives zero successors, however this will require some experimentation
+        - Neighbour selection uses a weak form of Roulette Selection
+        - Base Temperature = 1
+        - Terminating Temperature = 0.001
+        - Alpha = 0.7
+        - Iteration per Cool Down = 40
+    - Current Perform is significantly better than EHCS, which is expected, unless implementation is wrong.
+    - Needs tweaking on parameters to aim for improvements
+    - Neighbour selection and generation needs some tweaking.
+    - Generated Plan needs to be Validated
     
