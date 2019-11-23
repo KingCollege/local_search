@@ -96,18 +96,22 @@ public class TotalOrderPlan implements Plan, Cloneable
 	public void print(PrintStream ps)
 	{
 		Iterator pit = plan.iterator();
+		int step = 1;
 		while (pit.hasNext())
 		{
-			ps.println("("+pit.next()+")");
+			ps.println(step + ": "+"("+pit.next()+")");
+			step++;
 		}
 	}
 
 	public void print(PrintWriter pw)
 	{
 		Iterator pit = plan.iterator();
+		int step = 1;
 		while (pit.hasNext())
 		{
-			pw.println("("+pit.next()+")");
+			pw.println(step + ": "+"("+pit.next()+")");
+			step++;
 		}
 	}
 }

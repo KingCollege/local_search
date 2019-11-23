@@ -55,6 +55,7 @@ import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Random;
 
 public class JavaFF {
@@ -70,8 +71,8 @@ public class JavaFF {
 	public static PrintStream errorOutput = System.err;
 
 	public static void main(String args[]) {
-		EPSILON = EPSILON.setScale(2, BigDecimal.ROUND_HALF_EVEN);
-		MAX_DURATION = MAX_DURATION.setScale(2, BigDecimal.ROUND_HALF_EVEN);
+		EPSILON = EPSILON.setScale(2, RoundingMode.HALF_EVEN);
+		MAX_DURATION = MAX_DURATION.setScale(2, RoundingMode.HALF_EVEN);
 
 		generator = new Random();
 
@@ -172,7 +173,7 @@ public class JavaFF {
 
 	private static void writePlanToFile(Plan plan, File fileOut) {
 		try {
-			FileOutputStream outputStream = new FileOutputStream(fileOut, true);
+			FileOutputStream outputStream = new FileOutputStream(fileOut);
 			PrintWriter printWriter = new PrintWriter(outputStream);
 			plan.print(printWriter);
 			printWriter.close();
@@ -192,7 +193,7 @@ public class JavaFF {
 		// EHC.setFilter(HelpfulFilter.getInstance());
 		// State goalState = EHC.search();
 
-			//HeuristicModificationSearch failed miserably
+		//HeuristicModificationSearch failed miserably
 		// HeuristicModificationSearch HMS = new HeuristicModificationSearch(initialState);
 		// HMS.setFilter(HelpfulFilter.getInstance()); 
 		// infoOutput.println("Initial Run: -------------------------------------------");
@@ -205,14 +206,13 @@ public class JavaFF {
 		// 			return goalState;
 		// 	}
 		// }
-
 		SimulatedAnnealing SAS = new SimulatedAnnealing(initialState);
-		SAS.setFilter(HelpfulFilter.getInstance());
+		SAS.setFilter(NullFilter.getInstance());
 		State goalState = SAS.search();
-
+		
 		if (goalState == null) // if we can't find one
 		{
-			infoOutput.println("EHC failed, using best-first search, with all actions");
+			infoOutput.println("Local Search Failed, Resorting to Global Search");
 
 			// create a Best-First Searcher
 			BestFirstSearch BFS = new BestFirstSearch(initialState);
@@ -225,7 +225,7 @@ public class JavaFF {
 			// and use that
 			goalState = BFS.search();
 		}
-
+		//infoOutput.println("Simulated Annealing worked");
 		return goalState; // return the plan
 
 	}

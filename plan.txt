@@ -1,0 +1,7 @@
+1: (WALK driver1 s2 p1-2)
+2: (WALK driver1 p1-2 s1)
+3: (WALK driver1 s1 p1-0)
+4: (WALK driver1 p1-0 s0)
+5: (BOARD-TRUCK driver1 truck1 s0)
+6: (DRIVE-TRUCK truck1 s0 s1 driver1)
+7: (DISEMBARK-TRUCK driver1 truck1 s1)

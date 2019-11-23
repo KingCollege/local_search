@@ -1,3 +1,12 @@
+BeamSearch instead of EHC?
+
+Restarts:
+    - Once a local search fails, keep a count the number of steps
+    upon restart, randomly select states - using "complete" randomness or use something like
+    roulette selection to choose states.
+    Once randomly selection count = steps, continue using EHC standard algorithm
+    - Heuristic Random Restart
+
 Successor Selector Ideas:
     - Look Ahead
         - The selector will look at the successors and look a few steps a head of time to see if any of their following
@@ -8,9 +17,12 @@ Multi Start Local Search (TO DO):
     - Create instances of different search strategies and run them in parallel in order to find a solution
     - Incoperate Multi Start with Iterated Local search which can be used to improve a local search algorithm to
     find a solution or to improve on a solution.
-    
-Simulated Annealing Search (Implemented)
-    - Generate initial solution using EHCS (althought i do plan on using something else)
+    - Portfolio Optimization
+
+
+
+Simulated Annealing Search (Implemented) - Restart is good, only when its not too frequent
+    - Generate initial solution using EHCS (although i do plan on using something else)
         - Neighbour generation is based on successors, and closed states (second chance) but only
         the current state gives zero successors, however this will require some experimentation
         - Neighbour selection uses a weak form of Roulette Selection
@@ -22,4 +34,12 @@ Simulated Annealing Search (Implemented)
     - Needs tweaking on parameters to aim for improvements
     - Neighbour selection and generation needs some tweaking.
     - Generated Plan needs to be Validated
-    
+    - Simulated Annealing was designed for obtaining optimal solution however we want to get to a solution as fast as possible,
+    one way is to use EHC to search, with random rate to restart, once it restarts, simulated annealing will jump and select a different state
+        - Set random restart rate = episilon
+        - Run EHC - until restart, plan found or failed
+        - Either case:
+            - Simulated annealing will randomly select a state to restart EHC on from its closed list
+            - reset closed & open list
+            - Initial state should always be included in its selection for random restart.
+        - Results are better, similar result as EHC

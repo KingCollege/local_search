@@ -1,0 +1,10 @@
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-1.pddl plan.txt
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-8.pddl
+
+
+VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeemaking.pddl
+
+VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeeproblem.pddl
+VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeeplan.txt
+
+VAL_KCL\build\win64\mingw\Debug\bin\Validate -v -t 0.001 VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeemaking.pddl VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeeproblem.pddl VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeeplan.txt
