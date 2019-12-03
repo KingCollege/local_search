@@ -1,4 +1,4 @@
-VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-1.pddl plan.txt
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-15.pddl plan.txt
 VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-8.pddl
 
 

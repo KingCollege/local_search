@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.Hashtable;
 import java.util.Iterator;
 
+// Simulated Annealing Combined with EHC & Random Restarts
 public class SimulatedAnnealing extends Search {
 	protected BigDecimal bestHValue;
 
@@ -80,7 +81,6 @@ public class SimulatedAnnealing extends Search {
 						return succ;
 					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
 						bestHValue = succ.getHValue();
-						//javaff.JavaFF.infoOutput.println(bestHValue);
 						open = new LinkedList();
 						open.add(succ);
 						break;
@@ -103,12 +103,17 @@ public class SimulatedAnnealing extends Search {
 		return Math.exp(-(neighbourE - currentE) / temperature);
 	}
 
+	// Neighbour generation based on closed states and successor states
+	// We can select neighbour based on how close their heuristic value is
+	// since each improvement made by local search will reduce heuristic we only need to focus on:
+	// reducing the current neighbours because some of them might not reach the thresh hold
+	// the newly added closed states needs to be evaluated so that states that are significantly worst should be eliminated
 	public Set neighbourGeneration(State s){
 		neighbours = new HashSet<>();
-
 		Iterator itr = closed.values().iterator();
 		int half = closed.values().size() / 2;
 		while(half > 0){
+			// Randomly selects 50% of the already visited nodes
 			neighbours.add(
 				closed.values().toArray()[javaff.JavaFF.generator.nextInt(closed.values().size())]
 			);
@@ -177,7 +182,6 @@ public class SimulatedAnnealing extends Search {
 				double acceptanceProb = acceptanceProbability(currentE, selectedE, temperature);
 				
 				if (selected.goalReached()){
-					System.out.println("1) Goal from Simulated Annealing");
 					return selected;
 				}
 				
@@ -185,7 +189,6 @@ public class SimulatedAnnealing extends Search {
 					restartChance = Math.exp(-(javaff.JavaFF.generator.nextInt(3) + 4));
 					currentOptimum = initialSearch(selected);
 					if (currentOptimum.goalReached()){
-						System.out.println("Goal from Simulated Annealing");
 						return currentOptimum;
 					}
 				}
@@ -197,7 +200,6 @@ public class SimulatedAnnealing extends Search {
 
 		currentOptimum = initialSearch(currentOptimum);
 		if (currentOptimum.goalReached()){
-			System.out.println("Goal from Simulated Annealing");
 			return currentOptimum;
 		}
 		return null;

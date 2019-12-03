@@ -188,7 +188,6 @@ public class JavaFF {
 	}
 
 	public static State performFFSearch(TemporalMetricState initialState) {
-
 		// EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
 		// EHC.setFilter(HelpfulFilter.getInstance());
 		// State goalState = EHC.search();
@@ -206,27 +205,26 @@ public class JavaFF {
 		// 			return goalState;
 		// 	}
 		// }
-		SimulatedAnnealing SAS = new SimulatedAnnealing(initialState);
-		SAS.setFilter(NullFilter.getInstance());
-		State goalState = SAS.search();
 		
-		if (goalState == null) // if we can't find one
+		SimulatedAnnealing SAS = new SimulatedAnnealing(initialState);
+		SAS.setFilter(HelpfulFilter.getInstance());
+		State goalState = SAS.search();
+
+		if (goalState == null){		
+			System.out.println("Simulated Annealing failed with helpful, using null instead");
+			SAS = new SimulatedAnnealing(initialState);
+			SAS.setFilter(NullFilter.getInstance());
+			goalState = SAS.search();
+		}
+
+		if (goalState == null) 
 		{
 			infoOutput.println("Local Search Failed, Resorting to Global Search");
-
-			// create a Best-First Searcher
 			BestFirstSearch BFS = new BestFirstSearch(initialState);
-
-			// ... change to using the 'all actions' neighbourhood (a null filter, as it
-			// removes nothing)
-
 			BFS.setFilter(NullFilter.getInstance());
-
-			// and use that
 			goalState = BFS.search();
 		}
-		//infoOutput.println("Simulated Annealing worked");
-		return goalState; // return the plan
+		return goalState;
 
 	}
 }

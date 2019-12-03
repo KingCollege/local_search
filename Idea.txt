@@ -15,11 +15,13 @@ Successor Selector Ideas:
 
 Multi Start Local Search (TO DO):
     - Create instances of different search strategies and run them in parallel in order to find a solution
-    - Incoperate Multi Start with Iterated Local search which can be used to improve a local search algorithm to
-    find a solution or to improve on a solution.
+    - All instances share a single closed list, but with their own open list.
+    - If an instance starts to stagnate or reached a local optimum, meta-heuristic should be applied to diversify
+    the search to somewhere else.
+    - In order to keep closed list "safe", each instance should store a small amount of closed state in its own memory, then
+    - when necessary, each instance should be scheduled to have the chance those locally stored closed state into the globally stored state
+    - As multiple instances may return different plans, the best one should be selected.
     - Portfolio Optimization
-
-
 
 Simulated Annealing Search (Implemented) - Restart is good, only when its not too frequent
     - Generate initial solution using EHCS (although i do plan on using something else)
@@ -43,3 +45,19 @@ Simulated Annealing Search (Implemented) - Restart is good, only when its not to
             - reset closed & open list
             - Initial state should always be included in its selection for random restart.
         - Results are better, similar result as EHC
+
+Genetic Algorithm 
+    - Encoding of chromosome
+        - Use EHC or the like, to first try to find a plan, if a valid plan is found, return it for satisfaction,
+        otherwise, the population is selected from the list of closed states.
+            - Since each state in a closed state is a valid state obtained from the initial state, we do not need to take into
+            consideration about validatity of our initial generation
+            - We extract a plan from each of these states - which formulates a chromosome
+        - The encoding of a chromosome is then the list of atomic actions from the subplan
+    - Fitness
+        - is derived from the length of the plan
+        - the validity
+        - the heuristics
+
+
+Test algorithm with at least 5 random seeds
