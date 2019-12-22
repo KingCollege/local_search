@@ -48,6 +48,8 @@ import javaff.search.BestFirstSearch;
 import javaff.search.EnforcedHillClimbingSearch;
 import javaff.search.HeuristicModificationSearch;
 
+import javaff.genetics.Chromosome;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.File;
@@ -117,6 +119,7 @@ public class JavaFF {
 
 		GroundProblem ground = unground.ground();
 
+		Chromosome.updateGeneTable(ground.getActions());
 		long afterGrounding = System.currentTimeMillis();
 
 		// ********************************
@@ -125,6 +128,8 @@ public class JavaFF {
 
 		// Get the initial state
 		TemporalMetricState initialState = ground.getTemporalMetricInitialState();
+
+		Chromosome.setInitialState(initialState);
 
 		State goalState = goalState = performFFSearch(initialState);
 

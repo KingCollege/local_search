@@ -73,6 +73,10 @@ public class TotalOrderPlan implements Plan, Cloneable
 		return plan.listIterator(plan.indexOf(a));
 	}
 
+	public List getOrderedActions(){
+		return plan;
+	}
+
 	public Set getActions()
 	{
 		return new HashSet(plan);

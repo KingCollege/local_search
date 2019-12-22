@@ -2,6 +2,7 @@ package javaff.search;
 
 import javaff.planning.State;
 import javaff.JavaFF;
+import javaff.data.TotalOrderPlan;
 import javaff.planning.Filter;
 import java.util.Set;
 import java.util.SortedSet;
@@ -10,6 +11,8 @@ import java.util.LinkedList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.math.BigDecimal;
+
+import javaff.genetics.Chromosome;
 
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -21,7 +24,6 @@ public class SimulatedAnnealing extends Search {
 	protected Hashtable closed;
 	protected LinkedList open;
 	protected Filter filter = null;
-
 
 	protected Set neighbours = new HashSet<>();
 	//Initial temperature
@@ -165,7 +167,8 @@ public class SimulatedAnnealing extends Search {
 	public State search(){
 		restartChance = Math.exp(-(javaff.JavaFF.generator.nextInt(3) + 4));
 		State currentOptimum = initialSearch(start);
-
+		Chromosome.setAncestor( ((TotalOrderPlan) currentOptimum.getSolution()).getOrderedActions());
+		Chromosome.initialPopulation(200);
 		if (currentOptimum.goalReached()){
 			System.out.println("Goal from EHC");
 			return currentOptimum;

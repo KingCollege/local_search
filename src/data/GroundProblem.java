@@ -64,6 +64,11 @@ public class GroundProblem
 		metric = m;
 	}
 	
+	//
+	public Set getActions(){
+		return actions;
+	}
+
     public STRIPSState getSTRIPSInitialState()
     {
     	STRIPSState s = new STRIPSState(actions, initial, goal);
