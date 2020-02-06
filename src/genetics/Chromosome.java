@@ -5,7 +5,8 @@ import java.util.Set;
 import javaff.JavaFF;
 import javaff.data.Action;
 import javaff.planning.State;
-
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Hashtable;
@@ -88,8 +89,14 @@ public class Chromosome {
         }
     }
 
-    public static Set initialPopulation(int size) {
-        HashSet chromosomes = new HashSet();
+    public static PriorityQueue initialPopulation(int size) {
+        PriorityQueue chromosomes = new PriorityQueue<Chromosome>(new Comparator<Chromosome>() {
+            @Override
+            public int compare(Chromosome o1, Chromosome o2) {
+                return - Double.compare(o1.getFitness(), o2.getFitness());
+            }
+        });
+
         LinkedList ancestorGenes = ancestor.genes;
         while(size > 0) {
             // How many genes are potentially inherited
@@ -113,12 +120,11 @@ public class Chromosome {
             // System.out.println("Chromosome: " + (200 - size));
             // pGene.forEach(g ->  System.out.println( ((Action) geneTable.get(g)).toString()) );
             Chromosome c = new Chromosome(pGene);
+            chromosomes.add(c);
             size--;
         }
 
-
-
-        return null;
+        return chromosomes;
     }
 
     private static void addRandomGenes(LinkedList g, int amount) {

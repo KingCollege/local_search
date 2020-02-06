@@ -114,5 +114,10 @@ public class GroundProblem
 		return state;
 	}
 
+	public TemporalMetricState getClone() {
+		state = null;
+		state = getTemporalMetricInitialState();
+		return state;
+	}
 	
 }

@@ -43,8 +43,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Hashtable;
 
-public class PlanningGraph
-{
+public class PlanningGraph implements Cloneable
+{	
 	//******************************************************
 	// Data Structures
 	//******************************************************
@@ -68,10 +68,7 @@ public class PlanningGraph
 	//******************************************************
 	// Main methods
 	//******************************************************
-	protected PlanningGraph()
-	{
-
-	}
+	protected PlanningGraph(){}
 
 	public PlanningGraph(GroundProblem gp)
 	{
@@ -107,12 +104,10 @@ public class PlanningGraph
 			if (plan != null) break;
 			if (!level_off) numeric_level_off = 0;
 			if (level_off || numeric_level_off >= NUMERIC_LIMIT) {
-				//printGraph();
+				// printGraph();
 				break;
 			}
 		}
-
-
 
 		if (plan != null)
 		{
@@ -123,7 +118,7 @@ public class PlanningGraph
 				PGAction a = (PGAction) pit.next();
 				if (!(a instanceof PGNoOp)) p.addAction(a.action);
 			}
-			//p.print(javaff.JavaFF.infoOutput);
+			// p.print(javaff.JavaFF.infoOutput);
 			return p;
 		}
 		else return null;
@@ -174,7 +169,6 @@ public class PlanningGraph
 				pga.conditions.add(pgp);
 				pgp.achieves.add(pga);
 			}
-
 			Iterator alit = pga.action.getAddPropositions().iterator();
 			while (alit.hasNext())
 			{
@@ -195,7 +189,7 @@ public class PlanningGraph
 		}
 	}
 
-	protected void resetAll(State s)
+	protected void  resetAll(State s)
 	{
 		propMutexes = new HashSet();
 		actionMutexes = new HashSet();
@@ -671,7 +665,7 @@ public class PlanningGraph
 	//******************************************************
 	// protected Classes
 	//******************************************************
-	protected class Node
+	protected class Node implements Cloneable
 	{
 		public int layer;
 		public Set mutexes;
@@ -736,6 +730,26 @@ public class PlanningGraph
 			action = a;
 		}
 
+		public PGAction clone() throws CloneNotSupportedException{
+			PGAction a = (PGAction) super.clone();
+			// a.conditions = new HashSet();
+			// a.achieves = new HashSet();
+			// a.deletes = new HashSet();
+			// for(Object c : conditions) {
+			// 	PGProposition p = ((PGProposition) c).clone();
+			// 	a.conditions.add(p);
+			// }
+			// for(Object c : achieves) {
+			// 	PGProposition p = ((PGProposition) c).clone();
+			// 	a.achieves.add(p);
+			// }
+			// for(Object c : deletes) {
+			// 	PGProposition p = ((PGProposition) c).clone();
+			// 	a.deletes.add(p);
+			// }
+			return a;
+		}
+
 		public Set getComparators()
 		{
 			return action.getComparators();
@@ -795,6 +809,26 @@ public class PlanningGraph
 		public PGProposition(Proposition p)
 		{
 			proposition = p;
+		}
+
+		public PGProposition clone() throws CloneNotSupportedException{
+			PGProposition p = (PGProposition) super.clone();
+			p.achieves = new HashSet();
+			p.achievedBy = new HashSet();
+			p.deletedBy = new HashSet();
+			for(Object o : achieves) {
+				PGAction a = ((PGAction) o).clone();
+				p.achieves.add(a);
+			}
+			for(Object o : achievedBy) {
+				PGAction a = ((PGAction) o).clone();
+				p.achievedBy.add(a);
+			}
+			for(Object o : deletedBy) {
+				PGAction a = ((PGAction) o).clone();
+				p.deletedBy.add(a);
+			}
+			return p;
 		}
 
 		public String toString()

@@ -39,7 +39,9 @@ import java.util.Iterator;
 public abstract class State implements Cloneable
 {
 	public GroundCondition goal;
-
+	public Action appliedAction = null;
+	// debug
+	public Boolean hCalculated = false;
 //	public Filter filter = null;
 
 //	public void setFilter(Filter f)
@@ -61,10 +63,15 @@ public abstract class State implements Cloneable
 		while (ait.hasNext())
 		{
 			Action a = (Action) ait.next();
-			rSet.add(this.apply(a));
+			State r = this.apply(a);
+			r.appliedAction = a;
+			rSet.add(r);
+			// rSet.add(this.apply(a));
 		}
 		return rSet;
 	}
+
+	
 
 	public State apply(Action a)    // return a cloned copy
 	{
@@ -79,6 +86,7 @@ public abstract class State implements Cloneable
 		return s;
 	}
 
+	public abstract void setHValue(BigDecimal h);
 	public abstract BigDecimal getHValue();
 	public abstract BigDecimal getGValue();
 

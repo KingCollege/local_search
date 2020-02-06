@@ -30,6 +30,9 @@ package javaff.planning;
 
 import javaff.data.GroundProblem;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Set;
 
 public class RelaxedPlanningGraph extends PlanningGraph
@@ -37,6 +40,21 @@ public class RelaxedPlanningGraph extends PlanningGraph
 	public RelaxedPlanningGraph(GroundProblem gp)
     {
 		super(gp);
+	}
+
+	public RelaxedPlanningGraph clone() throws CloneNotSupportedException {
+		RelaxedPlanningGraph c = (RelaxedPlanningGraph) super.clone();
+		// c.propositionMap = new Hashtable(super.propositionMap);
+		// c.actionMap = new Hashtable(super.actionMap);
+		// c.propositions = new HashSet(super.propositions);
+		// c.actions = new HashSet(super.actions);
+		// c.initial = new HashSet(super.initial);
+		// c.goal =new HashSet(super.goal);
+		// c.propMutexes =new HashSet(super.propMutexes);
+		// c.actionMutexes =new HashSet(super.actionMutexes);
+		// c.memorised = new ArrayList(super.memorised);
+		// c.readyActions = new HashSet(super.readyActions);
+		return c;
 	}
 	
 	protected boolean checkPropMutex(MutexPair m, int l)

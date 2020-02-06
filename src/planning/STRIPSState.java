@@ -71,12 +71,20 @@ public class STRIPSState extends State implements Cloneable
 		plan = p;
 	}
 
+	public void copy(STRIPSState s) {
+		s.plan = plan;
+		s.HValue = HValue;
+		s.RelaxedPlan = RelaxedPlan;
+		s.helpfulActions = helpfulActions;
+	}
+
 	public Object clone()
 	{
 		Set nf = (Set) ((HashSet) facts).clone();
 		TotalOrderPlan p = (TotalOrderPlan) plan.clone();
 		STRIPSState SS = new STRIPSState(actions, nf, goal, p);
 		SS.setRPG(RPG);
+		System.out.println("Cloned?");
 //		SS.setFilter(filter);
 		return SS;
 	}
@@ -123,11 +131,14 @@ public class STRIPSState extends State implements Cloneable
 		return actions;
 	}
 
-	public void calculateRP()
+	public synchronized void calculateRP()
 	{
 		if (!RPCalculated)
 		{
 			RelaxedPlan = (TotalOrderPlan) RPG.getPlan(this);
+			// if(RelaxedPlan == null) {
+			// 	RelaxedPlan = (TotalOrderPlan) RPG.getPlan(this);//Second chance
+			// }
 			helpfulActions = new HashSet();
 			if (!(RelaxedPlan == null))
 			{
@@ -145,9 +156,43 @@ public class STRIPSState extends State implements Cloneable
 		}
 	}
 
+	//
+	public State applyRPG() {
+		State s = (State) this.clone();
+		// if (!RPCalculated) {
+		// 	calculateRP();
+		// }
+		// System.out.println(getHValue());
+		if(RelaxedPlan == null)
+			RelaxedPlan = (TotalOrderPlan) RPG.getPlan(s);
+		if (!(RelaxedPlan == null))
+		{
+			Iterator it = RelaxedPlan.iterator();
+			while (it.hasNext())
+			{
+				Action a = (Action) it.next();
+				if( a.isApplicable(s)) {
+					s = (STRIPSState) s.apply(a);
+					s.appliedAction = a;
+					
+					// s.RPCalculated = false;
+				}
+				else {break;}
+			}
+		}
+		// s.calculateRP();
+		return s;
+	}
+
+	public void setHValue(BigDecimal h) {
+		RPCalculated = true;
+		HValue = h;
+	}
+
 	public BigDecimal getHValue()
 	{
 		calculateRP();
+		hCalculated = true;
 		return HValue;
 	}
 

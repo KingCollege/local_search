@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.math.BigDecimal;
 
+
 public class RelaxedTemporalMetricPlanningGraph extends RelaxedMetricPlanningGraph
 {
 	public RelaxedTemporalMetricPlanningGraph(GroundProblem gp)

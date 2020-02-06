@@ -15,11 +15,9 @@ import java.util.Iterator;
 
 public class HeuristicModificationSearch extends Search {
 	protected BigDecimal bestHValue;
-	protected BigDecimal worstHValue;
 	protected Hashtable closed;
 	protected LinkedList open;
 	protected Filter filter = null;
-	protected double mutateRate = 1;
 
 	public HeuristicModificationSearch(State s) {
 		this(s, new HValueComparator());
@@ -53,40 +51,13 @@ public class HeuristicModificationSearch extends Search {
 		return true; // and return true
 	}
 
-	public boolean isMutationBetter(State successor , BigDecimal current, boolean better){
-		double mutatedSucc = successor.getHValue().doubleValue();
-		double currH = current.doubleValue();
-		if(better)
-			mutatedSucc = mutatedSucc * mutateRate;
-		else
-			mutatedSucc = mutatedSucc / mutateRate;
-		
-		//javaff.JavaFF.infoOutput.println("Mutated State H: "+ mutatedSucc);
-		if (mutatedSucc < currH){
-			//javaff.JavaFF.infoOutput.println("Best Heuristic: " + mutatedSucc);
-			bestHValue = BigDecimal.valueOf(bestHValue.doubleValue() + mutatedSucc);
-			open = new LinkedList();
-			open.add(successor);
-			return true;
-		}
-		open.add(successor);
-		worstHValue = BigDecimal.valueOf(worstHValue.doubleValue() + mutatedSucc);
-		return false;
-	}
-
 	public State search() {
-		closed = new Hashtable();
 		if (start.goalReached()) {
 			return start;
 		}
 		needToVisit(start);
 		open.add(start);
 		bestHValue = start.getHValue();
-		worstHValue = bestHValue;
-		javaff.JavaFF.infoOutput.println("Initial Heuristic "+ bestHValue);
-
-		int bestCount = 0;
-		int worstCount = 0;
 
 		while (!open.isEmpty())
 		{
@@ -98,39 +69,23 @@ public class HeuristicModificationSearch extends Search {
 			while (succItr.hasNext()) {
 				State succ = (State) succItr.next();
 				if (needToVisit(succ)) {
-
 					if (succ.goalReached()) { 
 						return succ;
 					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
-
-						if (isMutationBetter(succ, bestHValue, true)){
-							bestCount++;
-							break;
-						}
-						else{
-							worstCount++;
-						}
-
+						bestHValue = succ.getHValue();
+						open = new LinkedList();
+						open.add(succ);
+						break;
 					} else {
-
-						if (isMutationBetter(succ, bestHValue, false)){
-							bestCount++;
-							break;
-						}
-						else{
-							worstCount++;
-						}
-
+						open.add(succ);
 					}
 				}
 			}
+			if(open.size() > 1) {
+				
+			}
 		}
 
-		double bestAverage = bestHValue.doubleValue() / (bestCount > 0 ? bestCount : 1);
-		double worstAverage =  worstHValue.doubleValue() / (worstCount > 0 ? worstCount : 1);
-
-		mutateRate = (worstAverage / bestAverage);
-		javaff.JavaFF.infoOutput.println("Mutation Value: " + mutateRate);
 		return null;
 	}
 }

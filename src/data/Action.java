@@ -34,6 +34,7 @@ import javaff.planning.State;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.math.BigDecimal;
@@ -64,6 +65,16 @@ public abstract class Action
 	public abstract Set getComparators();
 	public abstract Set getOperators();
 	public abstract void staticify(Map fValues);
+
+	// Returns the number of elements that two params share
+	public int compareParams(List paramsB) {
+		// Its safer to use hashset in terms of time complexity
+		HashSet paramSetA = new HashSet(params);
+		HashSet paramSetB = new HashSet(paramsB);
+		paramSetA.retainAll(paramSetB);
+		// System.out.println("Params In Common: " + paramSetA.size());
+		return paramSetA.size();
+	}
 
 	public boolean equals(Object obj)
     {

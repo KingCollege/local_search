@@ -40,15 +40,20 @@ import javaff.planning.TemporalMetricState;
 import javaff.planning.RelaxedTemporalMetricPlanningGraph;
 import javaff.planning.HelpfulFilter;
 import javaff.planning.NullFilter;
+import javaff.planning.RelaxedPlanningGraph;
 import javaff.scheduling.Scheduler;
 import javaff.scheduling.JavaFFScheduler;
 import javaff.search.Search;
 import javaff.search.SimulatedAnnealing;
 import javaff.search.BestFirstSearch;
+import javaff.search.BestSuccessorSelector;
 import javaff.search.EnforcedHillClimbingSearch;
 import javaff.search.HeuristicModificationSearch;
+import javaff.search.HillClimbingSearch;
+import javaff.search.RouletteSelector;
+import javaff.search.Identidem;
+import javaff.genetics.*;
 
-import javaff.genetics.Chromosome;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -58,11 +63,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.PriorityQueue;
 import java.util.Random;
+import java.util.Set;
 
 public class JavaFF {
 	public static BigDecimal EPSILON = new BigDecimal(0.01);
 	public static BigDecimal MAX_DURATION = new BigDecimal("100000"); // maximum duration in a duration constraint
+	public static int MAX_THREAD_SIZE = 4;
 	public static boolean VALIDATE = false;
 
 	public static Random generator = null;
@@ -71,6 +79,8 @@ public class JavaFF {
 	public static PrintStream parsingOutput = System.out;
 	public static PrintStream infoOutput = System.out;
 	public static PrintStream errorOutput = System.err;
+	public static RelaxedPlanningGraph[] clonedRPG;
+
 
 	public static void main(String args[]) {
 		EPSILON = EPSILON.setScale(2, RoundingMode.HALF_EVEN);
@@ -106,7 +116,7 @@ public class JavaFF {
 		// Parse and Ground the Problem
 		// ********************************
 		long startTime = System.currentTimeMillis();
-
+		clonedRPG = new RelaxedPlanningGraph[MAX_THREAD_SIZE];
 		UngroundProblem unground = PDDL21parser.parseFiles(dFile, pFile);
 
 		if (unground == null) {
@@ -128,9 +138,12 @@ public class JavaFF {
 
 		// Get the initial state
 		TemporalMetricState initialState = ground.getTemporalMetricInitialState();
+		for(int i = 0; i < clonedRPG.length; ++i) {
+			clonedRPG[i] = ground.getClone().getRPG();
+			// infoOutput.println(clonedRPG[i]);
+		}
 
-		Chromosome.setInitialState(initialState);
-
+		// Chromosome.setInitialState(initialState);
 		State goalState = goalState = performFFSearch(initialState);
 
 		long afterPlanning = System.currentTimeMillis();
@@ -193,42 +206,61 @@ public class JavaFF {
 	}
 
 	public static State performFFSearch(TemporalMetricState initialState) {
-		// EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
-		// EHC.setFilter(HelpfulFilter.getInstance());
-		// State goalState = EHC.search();
+		// Identidem idtdm = new Identidem(initialState);
+		State goalState = initialState;
 
-		//HeuristicModificationSearch failed miserably
-		// HeuristicModificationSearch HMS = new HeuristicModificationSearch(initialState);
-		// HMS.setFilter(HelpfulFilter.getInstance()); 
-		// infoOutput.println("Initial Run: -------------------------------------------");
-		// State goalState = HMS.search();
-		// if (goalState == null){
-		// 	for(int i = 0; i < 20; i++){
-		// 		infoOutput.println("Round " + i + " ------------------------------------------------------");
-		// 		goalState = HMS.search();
-		// 		if (goalState != null)
-		// 			return goalState;
+		for(int i = 0; i < 50; ++ i) {
+			EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(goalState);
+			EHC.setFilter(HelpfulFilter.getInstance());
+			goalState = EHC.search();
+
+			if(goalState.goalReached()) {
+				return goalState;
+			}
+
+			infoOutput.println("EHC Failed, using Identidem to escape");
+			Identidem IDTM = new Identidem(goalState);
+			IDTM.setClosedList(EHC.getClosedList());
+			IDTM.setSelector(RouletteSelector.getInstance());
+			goalState = IDTM.search();
+			if(goalState != null) {
+				infoOutput.println("Identidem escaped");
+				// EHC.setStartingState(goalState);
+			}
+			else{
+				break;
+			}
+		}
+		
+		// for(int i = 0; i < 50; ++ i) {
+		// 	Identidem IDTM = new Identidem(goalState);
+		// 	IDTM.setSelector(RouletteSelector.getInstance());
+		// 	goalState = IDTM.search();
+		// 	if(goalState == null) {
+		// 		goalState = initialState;
+		// 		continue;
 		// 	}
+		// 	if(goalState.goalReached()) {
+		// 		return goalState;
+		// 	}
+
 		// }
 		
-		SimulatedAnnealing SAS = new SimulatedAnnealing(initialState);
-		SAS.setFilter(HelpfulFilter.getInstance());
-		State goalState = SAS.search();
+		
 
-		if (goalState == null){		
-			System.out.println("Simulated Annealing failed with helpful, using null instead");
-			SAS = new SimulatedAnnealing(initialState);
-			SAS.setFilter(NullFilter.getInstance());
-			goalState = SAS.search();
-		}
+		// Chromosome.setAncestor( ((TotalOrderPlan) goalState.getSolution()).getOrderedActions());
+		// PriorityQueue chroms = Chromosome.initialPopulation(200);
+		// GeneticAlgorithm GA = new GeneticAlgorithm(chroms);
+		// GA.selection();
 
-		if (goalState == null) 
+		if (goalState == null || !goalState.goalReached()) 
 		{
 			infoOutput.println("Local Search Failed, Resorting to Global Search");
 			BestFirstSearch BFS = new BestFirstSearch(initialState);
 			BFS.setFilter(NullFilter.getInstance());
 			goalState = BFS.search();
 		}
+
 		return goalState;
 
 	}

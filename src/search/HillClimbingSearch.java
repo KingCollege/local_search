@@ -29,8 +29,7 @@
 package javaff.search;
 
 import javaff.planning.State;
-import javaff.data.Action;
-import javaff.data.strips.OperatorName;
+import javaff.search.SuccessorSelector;
 import javaff.planning.Filter;
 import javaff.planning.STRIPSState;
 
@@ -39,25 +38,25 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.LinkedList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.math.BigDecimal;
 
 import java.util.Hashtable;
 import java.util.Iterator;
 
-public class EnforcedHillClimbingSearch extends Search {
+public class HillClimbingSearch extends Search {
 	protected BigDecimal bestHValue;
 
 	protected Hashtable closed;
 	protected LinkedList open;
-	protected Filter filter = null;
-	protected boolean searchForSubGoal = false;
+    protected Filter filter = null;
+    protected SuccessorSelector selector = null;
+    protected int maxDepth = 30;
 
-	public EnforcedHillClimbingSearch(State s) {
+	public HillClimbingSearch(State s) {
 		this(s, new HValueComparator());
 	}
 
-	public EnforcedHillClimbingSearch(State s, Comparator c) {
+	public HillClimbingSearch(State s, Comparator c) {
 		super(s);
 		setComparator(c);
 
@@ -65,17 +64,13 @@ public class EnforcedHillClimbingSearch extends Search {
 		open = new LinkedList();
 	}
 
-	public Hashtable getClosedList() {
-		return closed;
-	}
-
-	public void setClosedList(Hashtable c) {
-		closed = c;
-	}
-
 	public void setStartingState(State s) {
 		start = s;
-	}
+    }
+    
+    public void setSelector(SuccessorSelector s) {
+        selector = s;
+    }
 
 	public void setFilter(Filter f) {
 		filter = f;
@@ -97,20 +92,8 @@ public class EnforcedHillClimbingSearch extends Search {
 		return true; 
 	}
 
-	public boolean subGoalAchieved(State s) {
-		if(!searchForSubGoal)
-			return false;
-		STRIPSState strip = (STRIPSState) s;
-		Set goals = s.goal.getConditionalPropositions();
-		return false;
-	}
 
-	
-	public State subGoalSearch() {
-		searchForSubGoal = true;
-		return search();
-	}
-
+	// I need to do this check thing for traditional hill climbing and now EHC.
 	public State search() {
 
 		if (start.goalReached()) {
@@ -120,40 +103,28 @@ public class EnforcedHillClimbingSearch extends Search {
 		needToVisit(start); 
 		open.add(start);
 		bestHValue = start.getHValue();
-		javaff.JavaFF.infoOutput.println(bestHValue);
-		State s = null; State bestState = start;
-		int badEncounters = 0;
-		while (!open.isEmpty())
+        State s = start; State bestState = start;
+        int depth = 0;
+		while (s != null)
 		{
-			s = removeNext(); 
-			Set actions = filter.getActions(s);
-
-			Set successors = s.getNextStates(actions);
+			Set successors = s.getNextStates(filter.getActions(s));
 			successors.add(((STRIPSState) s).applyRPG());
-			Iterator succItr = successors.iterator();
-			while (succItr.hasNext()) {
-				State succ = (State) succItr.next(); 
-				if (needToVisit(succ)) {
-					if (succ.goalReached()) { 
-						return succ;
-					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
-						bestState = succ;
-						bestHValue = succ.getHValue(); 
-						// javaff.JavaFF.infoOutput.println(bestHValue);
-						open = new LinkedList(); 
-						open.add(succ);
-						break; 
-					} else { 
-						open.add(succ);
-					}
-				}
-				if(open.size() > 1 ) {
-					badEncounters++;
-					if(badEncounters > 30)
-						return bestState;
-				}
-			}
+            State best = selector.choose(successors);
+            if(best != null) {
+                if(needToVisit(best)) {
+                    if(best.goalReached()) {
+                        return best;
+                    }else {
+                        javaff.JavaFF.infoOutput.println(best.getHValue());
+                        bestState = best;
+                        s = best;
+                    }
+                }
+            }
 
+            depth++;
+            if(depth == maxDepth)
+                return bestState;
 		}
 
 		return bestState;

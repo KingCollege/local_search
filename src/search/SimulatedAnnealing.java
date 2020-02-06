@@ -105,32 +105,9 @@ public class SimulatedAnnealing extends Search {
 		return Math.exp(-(neighbourE - currentE) / temperature);
 	}
 
-	// Neighbour generation based on closed states and successor states
-	// We can select neighbour based on how close their heuristic value is
-	// since each improvement made by local search will reduce heuristic we only need to focus on:
-	// reducing the current neighbours because some of them might not reach the thresh hold
-	// the newly added closed states needs to be evaluated so that states that are significantly worst should be eliminated
 	public Set neighbourGeneration(State s){
-		neighbours = new HashSet<>();
-		Iterator itr = closed.values().iterator();
-		int half = closed.values().size() / 2;
-		while(half > 0){
-			// Randomly selects 50% of the already visited nodes
-			neighbours.add(
-				closed.values().toArray()[javaff.JavaFF.generator.nextInt(closed.values().size())]
-			);
-			half--;
-		}
-
-		if(s != null){
-			Set successors = s.getNextStates(filter.getActions(s));
-			itr = successors.iterator();
-			while(itr.hasNext()){
-				State succ = (State) itr.next();
-				neighbours.add(succ);
-			}
-		}
-		return neighbours;
+		Set successors = s.getNextStates(filter.getActions(s));
+		return successors;
 	}
 
 
@@ -167,8 +144,6 @@ public class SimulatedAnnealing extends Search {
 	public State search(){
 		restartChance = Math.exp(-(javaff.JavaFF.generator.nextInt(3) + 4));
 		State currentOptimum = initialSearch(start);
-		Chromosome.setAncestor( ((TotalOrderPlan) currentOptimum.getSolution()).getOrderedActions());
-		Chromosome.initialPopulation(200);
 		if (currentOptimum.goalReached()){
 			System.out.println("Goal from EHC");
 			return currentOptimum;
