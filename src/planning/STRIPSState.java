@@ -71,7 +71,7 @@ public class STRIPSState extends State implements Cloneable
 		plan = p;
 	}
 
-	public void copy(STRIPSState s) {
+	public void copyInto(STRIPSState s) {
 		s.plan = plan;
 		s.HValue = HValue;
 		s.RelaxedPlan = RelaxedPlan;
@@ -177,7 +177,8 @@ public class STRIPSState extends State implements Cloneable
 					
 					// s.RPCalculated = false;
 				}
-				else {break;}
+				// TODO: Test if breaking out early, increases performance
+				// else {break;}
 			}
 		}
 		// s.calculateRP();

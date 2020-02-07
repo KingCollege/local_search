@@ -2,8 +2,7 @@ package javaff.search;
 
 import javaff.planning.State;
 import javaff.search.SuccessorSelector;
-import javaff.search.Tabu;
-import javaff.threading.MultiStateExpansion;
+import javaff.threading.MultiThreadStateManager;
 import javaff.threading.StateThread;
 import javaff.planning.Filter;
 import java.util.Set;
@@ -28,7 +27,7 @@ import java.util.Iterator;
 public class Identidem extends Search {
 	protected BigDecimal bestHValue;
     protected SuccessorSelector selector;
-    protected Hashtable closed;
+    protected Hashtable history;
     protected Filter filter = null;
     
     private int maxFailCount = 32;
@@ -38,12 +37,11 @@ public class Identidem extends Search {
     private int probes = 60;
     private int neighbourSize = javaff.JavaFF.MAX_THREAD_SIZE - 1;
     private double maxBias = 1.5;
-    private Tabu tabu = new Tabu();
     
 	public Identidem(State s) {
         this(s, new HValueComparator());
         filter = NullFilter.getInstance();
-		closed = new Hashtable();
+		history = new Hashtable();
 	}
 
 	public Identidem(State s, Comparator c) {
@@ -51,16 +49,19 @@ public class Identidem extends Search {
 		setComparator(c);
 	}
     
-    public Hashtable getClosedList() {
-		return closed;
+    public Hashtable getHistory() {
+		return history;
 	}
 
-	public void setClosedList(Hashtable c) {
-		closed = c;
+	public void setHistory(Hashtable hs) {
+		history = hs;
 	}
 
     public void setFailCount(int failCount) {
-
+        this.failCount = failCount;
+    }
+    public int getFailCount() {
+        return failCount;
     }
 
     public void setInitialState(State s) {
@@ -85,10 +86,11 @@ public class Identidem extends Search {
                     // long endTime = System.currentTimeMillis();
                     // System.out.println("Process: " + ((endTime - startTime)/ 1000.00));
                     State rpgState = ((STRIPSState) localMin).applyRPG();
-                    MultiStateExpansion MSE = new MultiStateExpansion(neighbour, ((STRIPSState) localMin).getRPG());
-                    MSE.start(closed);
+                    MultiThreadStateManager manager = new MultiThreadStateManager(neighbour, ((STRIPSState) localMin).getRPG());
+                    manager.start(history);
+
                     rpgState.getHValue();
-                    MSE.join();
+                    manager.join();
                     neighbour.add(rpgState);
                     localMin = selector.choose(neighbour, bias);
 
@@ -96,34 +98,44 @@ public class Identidem extends Search {
                         return localMin;
                     }
                 }
-                bias = biasRate( p/((double)probes));
+
+                failCount++;
+                if(failCount >= maxFailCount) {
+                    failCount = 0;
+                    return localMin;
+                }
+
+                bias = biasRate( p/((double)probes) );
             }
-            if(filter instanceof NullFilter){
-                filter = HelpfulFilter.getInstance();
-            }else {
-                filter = NullFilter.getInstance();
-            }
+            alternateFilter();
             depth *= 2;
         }
         System.out.println("Identidem failed");
         return null;
     }
 
+    private void alternateFilter() {
+        // TO DO: Test different filter swapping
+        if(filter instanceof NullFilter){
+            filter = HelpfulFilter.getInstance();
+        }else {
+            filter = NullFilter.getInstance();
+        }
+    }
+
     private double biasRate(double x) {
+        // TO DO: Test different bias rates
         double y = -Math.pow(x, 2) + maxBias;
         if (y <= 0.5)
             return 0.5;
         return y;
     }
 
-    // Evaluate the set of actions for state s, put them into a bucket of similar actions, then finally,
-    // sample actions.
     private Set actionEvaluation(State s, Action p) {
         Set actions = filter.getActions(s);
         if(actions.size() <= neighbourSize) {
             return actions;
         }
-        // System.out.println(actions);
         Hashtable actionTable = new Hashtable();
         int xSize = actions.size(); // exclusive
         int ySize = p == null ? 1 : p.params.size(); // inclusive
@@ -132,8 +144,6 @@ public class Identidem extends Search {
         LinkedList[][] matrix = new LinkedList[xSize][ySize + 1];
         ArrayList<LinkedList> buckets = new ArrayList<LinkedList>();
         for(Object a : actions) {
-            // if(tabu.isTabu(((Action) a).name))
-            //     continue;
             String name = ((Action) a).name.toString();
             List params = ((Action) a).params;
             List previousParams = p == null ? null : p.params;
@@ -149,8 +159,6 @@ public class Identidem extends Search {
                 buckets.add(matrix[x][y]);
             }
             matrix[x][y].add(a);
-            // tabu.updateActionFrequency(((Action) a).name);
-            // // System.out.println(tabu.toString());
         }
         
         Set neighbourActions = new HashSet();
@@ -160,7 +168,6 @@ public class Identidem extends Search {
                 neighbourActions.add(buckets.get(i).removeFirst());
             }
         }
-        // System.out.println(neighbourActions);
         return neighbourActions;
     }
 }

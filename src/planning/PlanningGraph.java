@@ -119,6 +119,7 @@ public class PlanningGraph implements Cloneable
 				if (!(a instanceof PGNoOp)) p.addAction(a.action);
 			}
 			// p.print(javaff.JavaFF.infoOutput);
+			// System.out.println(Thread.currentThread().getName());
 			return p;
 		}
 		else return null;

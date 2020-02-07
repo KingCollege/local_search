@@ -26,7 +26,7 @@ public class StateThread extends Thread {
             // TO DO: Test for Improvements
             javaff.planning.State D = (javaff.planning.State) closed.get(hash);
             if(closed.containsKey(hash) && D.equals(s)) {
-                ((STRIPSState) D).copy((STRIPSState) s);
+                ((STRIPSState) D).copyInto((STRIPSState) s);
             }
             s.getHValue(); 
             ((STRIPSState) s).setRPG(rpg);

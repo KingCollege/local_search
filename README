@@ -1,1 +1,3 @@
 local search
+
+-XX:+UseSerialGC -Xmx2g -Xms32m 

@@ -12,11 +12,12 @@ import javaff.planning.State;
 import javaff.search.Search;
 import javaff.threading.StateThread;
 
-public class MultiStateExpansion{
+public class MultiThreadStateManager{
     private Set states = null;
     private RelaxedPlanningGraph original = null;
     private Set<StateThread> threads;
-    public MultiStateExpansion(Set states, RelaxedPlanningGraph rpg) {
+
+    public MultiThreadStateManager(Set states, RelaxedPlanningGraph rpg) {
         this.states = states;
         original = rpg;
     }
@@ -33,7 +34,7 @@ public class MultiStateExpansion{
                 threads.add(new StateThread(s, original));
             }
         } catch (Exception e) {
-            System.out.println( "Error from MultiStateExpansion: "+e);
+            System.out.println( "Error from MultiThreadStateManager: "+e);
         }
     }
 
@@ -43,7 +44,7 @@ public class MultiStateExpansion{
                 t.join();
             }
         } catch (Exception e) {
-            System.out.println( "Error from MultiStateExpansion: "+e);
+            System.out.println( "Error from MultiThreadStateManager: "+e);
         }
     }
 }

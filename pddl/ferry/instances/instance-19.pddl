@@ -3,8 +3,8 @@
 
 (define (problem ferry-l13-c8)
 (:domain ferry)
-(:objects l0 l1 l2 l3 l4 l5 l6 l7 l8 l9 l10 l11 l12 
-          c0 c1 c2 c3 c4 c5 c6 c7 
+(:objects l0 l1 l2 l3 l4 l5 l6 l7 l8 l9 l10 l11 l12 - location
+          c0 c1 c2 c3 c4 c5 c6 c7 - car
 )
 (:init
 (location l0)

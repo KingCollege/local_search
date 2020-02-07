@@ -63,6 +63,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Hashtable;
 import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
@@ -208,10 +209,12 @@ public class JavaFF {
 	public static State performFFSearch(TemporalMetricState initialState) {
 		// Identidem idtdm = new Identidem(initialState);
 		State goalState = initialState;
-
-		for(int i = 0; i < 50; ++ i) {
+		Hashtable history = new Hashtable();
+		int currentFailCount = 0;
+		while(!goalState.goalReached()) {//for(int i = 0; i < 50; ++ i) {
 			EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(goalState);
-			EHC.setFilter(HelpfulFilter.getInstance());
+			EHC.setFilter(HelpfulFilter.getInstance());	
+			EHC.setHistory(history);
 			goalState = EHC.search();
 
 			if(goalState.goalReached()) {
@@ -220,29 +223,35 @@ public class JavaFF {
 
 			infoOutput.println("EHC Failed, using Identidem to escape");
 			Identidem IDTM = new Identidem(goalState);
-			IDTM.setClosedList(EHC.getClosedList());
+			history.putAll(EHC.getClosedList());
+			IDTM.setHistory(history);
 			IDTM.setSelector(RouletteSelector.getInstance());
+			IDTM.setFailCount(currentFailCount);
 			goalState = IDTM.search();
+			currentFailCount = IDTM.getFailCount();
 			if(goalState != null) {
 				infoOutput.println("Identidem escaped");
-				// EHC.setStartingState(goalState);
 			}
 			else{
-				break;
+				infoOutput.println("Identidem failed");
+				goalState = initialState;
 			}
 		}
 		
-		// for(int i = 0; i < 50; ++ i) {
+		// while(!goalState.goalReached()) {
 		// 	Identidem IDTM = new Identidem(goalState);
 		// 	IDTM.setSelector(RouletteSelector.getInstance());
+		// 	IDTM.setFailCount(currentFailCount);
 		// 	goalState = IDTM.search();
+		// 	currentFailCount = IDTM.getFailCount();
 		// 	if(goalState == null) {
 		// 		goalState = initialState;
+		// 		System.out.println("Search Aborted");
 		// 		continue;
 		// 	}
-		// 	if(goalState.goalReached()) {
-		// 		return goalState;
-		// 	}
+		// 	// if(goalState.goalReached()) {
+		// 	// 	return goalState;
+		// 	// }
 
 		// }
 		

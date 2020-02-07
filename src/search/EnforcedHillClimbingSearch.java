@@ -49,9 +49,11 @@ public class EnforcedHillClimbingSearch extends Search {
 	protected BigDecimal bestHValue;
 
 	protected Hashtable closed;
+	protected Hashtable history;
 	protected LinkedList open;
 	protected Filter filter = null;
-	protected boolean searchForSubGoal = false;
+	protected Set subGoalsReached;
+	protected boolean searchForSubGoal = true;
 
 	public EnforcedHillClimbingSearch(State s) {
 		this(s, new HValueComparator());
@@ -60,17 +62,22 @@ public class EnforcedHillClimbingSearch extends Search {
 	public EnforcedHillClimbingSearch(State s, Comparator c) {
 		super(s);
 		setComparator(c);
-
+		subGoalsReached = new HashSet();
 		closed = new Hashtable();
+		history = new Hashtable();
 		open = new LinkedList();
+	}
+
+	public LinkedList getOpenList() {
+		return open;
 	}
 
 	public Hashtable getClosedList() {
 		return closed;
 	}
 
-	public void setClosedList(Hashtable c) {
-		closed = c;
+	public void setHistory(Hashtable hs) {
+		history = hs;
 	}
 
 	public void setStartingState(State s) {
@@ -97,18 +104,39 @@ public class EnforcedHillClimbingSearch extends Search {
 		return true; 
 	}
 
-	public boolean subGoalAchieved(State s) {
+	public Set reachedSubGoals(State s) {
 		if(!searchForSubGoal)
-			return false;
+			return new HashSet();
 		STRIPSState strip = (STRIPSState) s;
 		Set goals = s.goal.getConditionalPropositions();
-		return false;
+		Set facts = strip.facts;
+		Set reached = new HashSet();
+		for(Object sg: goals) {
+			if(facts.contains(sg)) {
+				reached.add(sg);
+			}
+		}
+		return reached;
 	}
 
-	
-	public State subGoalSearch() {
-		searchForSubGoal = true;
-		return search();
+	public Set filterGoalRemovingState(Set states) {
+		Set filtered = new HashSet();
+		for(Object s: states) {
+			State state = (State) s;
+			Set r = reachedSubGoals(state);
+			if(r.size() >= subGoalsReached.size()) {
+				filtered.add(state);
+			}
+		}
+		return filtered;
+	}
+
+	public void historyCheck(State s) {
+		Integer hash = Integer.valueOf(s.hashCode());
+		State D = (State) history.get(hash);
+		if(history.contains(hash) && D.equals(s)) {
+			((STRIPSState) D).copyInto((STRIPSState)s);
+		}
 	}
 
 	public State search() {
@@ -120,26 +148,32 @@ public class EnforcedHillClimbingSearch extends Search {
 		needToVisit(start); 
 		open.add(start);
 		bestHValue = start.getHValue();
+
 		javaff.JavaFF.infoOutput.println(bestHValue);
 		State s = null; State bestState = start;
 		int badEncounters = 0;
+
 		while (!open.isEmpty())
 		{
 			s = removeNext(); 
 			Set actions = filter.getActions(s);
-
 			Set successors = s.getNextStates(actions);
+
+			// TO DO: This seems to give a better solution than average: Test this.
+			subGoalsReached = reachedSubGoals(s);
+			successors = filterGoalRemovingState(successors);
+
 			successors.add(((STRIPSState) s).applyRPG());
 			Iterator succItr = successors.iterator();
 			while (succItr.hasNext()) {
 				State succ = (State) succItr.next(); 
 				if (needToVisit(succ)) {
+					historyCheck(succ);
 					if (succ.goalReached()) { 
 						return succ;
 					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
 						bestState = succ;
 						bestHValue = succ.getHValue(); 
-						// javaff.JavaFF.infoOutput.println(bestHValue);
 						open = new LinkedList(); 
 						open.add(succ);
 						break; 
@@ -149,7 +183,7 @@ public class EnforcedHillClimbingSearch extends Search {
 				}
 				if(open.size() > 1 ) {
 					badEncounters++;
-					if(badEncounters > 30)
+					if(badEncounters > 50)
 						return bestState;
 				}
 			}
