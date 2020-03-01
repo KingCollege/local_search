@@ -38,6 +38,7 @@ import java.util.Hashtable;
 
 public abstract class Search
 {
+	public static Hashtable history = new Hashtable();
 	protected State start;
 	protected int nodeCount = 0;
 	protected Comparator comp;

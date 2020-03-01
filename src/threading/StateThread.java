@@ -11,7 +11,6 @@ import javaff.search.Search;
 
 public class StateThread extends Thread {
     public javaff.planning.State s;
-    public static Hashtable closed;
     private RelaxedPlanningGraph rpg;
     public StateThread(javaff.planning.State s, RelaxedPlanningGraph rpg) {
         this.s = s;
@@ -24,11 +23,12 @@ public class StateThread extends Thread {
             Integer hash = Integer.valueOf(s.hashCode());
             
             // TO DO: Test for Improvements
-            javaff.planning.State D = (javaff.planning.State) closed.get(hash);
-            if(closed.containsKey(hash) && D.equals(s)) {
+            javaff.planning.State D = (javaff.planning.State) Search.history.get(hash);
+            if(Search.history.containsKey(hash) && D.equals(s)) {
                 ((STRIPSState) D).copyInto((STRIPSState) s);
             }
-            s.getHValue(); 
+            s.getHValue();
+            // System.out.println(Thread.currentThread().getName() + ": " + ((STRIPSState) s).getRPG()); 
             ((STRIPSState) s).setRPG(rpg);
         } catch (Exception e) {
             System.out.println("Error at StateThread: " + e);

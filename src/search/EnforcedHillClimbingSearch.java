@@ -29,6 +29,7 @@
 package javaff.search;
 
 import javaff.planning.State;
+import javaff.threading.StateEvaluationManager;
 import javaff.data.Action;
 import javaff.data.strips.OperatorName;
 import javaff.planning.Filter;
@@ -47,13 +48,13 @@ import java.util.Iterator;
 
 public class EnforcedHillClimbingSearch extends Search {
 	protected BigDecimal bestHValue;
-
 	protected Hashtable closed;
-	protected Hashtable history;
 	protected LinkedList open;
 	protected Filter filter = null;
+
 	protected Set subGoalsReached;
 	protected boolean searchForSubGoal = true;
+	protected int maxBadEncounter = 50;
 
 	public EnforcedHillClimbingSearch(State s) {
 		this(s, new HValueComparator());
@@ -64,16 +65,20 @@ public class EnforcedHillClimbingSearch extends Search {
 		setComparator(c);
 		subGoalsReached = new HashSet();
 		closed = new Hashtable();
-		history = new Hashtable();
 		open = new LinkedList();
 	}
 
-	public LinkedList getOpenList() {
-		return open;
+	public Set getOpenList() {
+		Set hash = new HashSet(open);
+		return hash;
 	}
 
 	public Hashtable getClosedList() {
 		return closed;
+	}
+
+	public void setBadEncounter(int b) {
+		maxBadEncounter = b;
 	}
 
 	public void setHistory(Hashtable hs) {
@@ -97,8 +102,10 @@ public class EnforcedHillClimbingSearch extends Search {
 		Integer Shash = new Integer(s.hashCode()); 
 		State D = (State) closed.get(Shash); 
 
-		if (closed.containsKey(Shash) && D.equals(s))
+		if (closed.containsKey(Shash) && D.equals(s)) {
+			// System.out.println("Past: "+((STRIPSState) s).facts);
 			return false;
+		}
 
 		closed.put(Shash, s); 
 		return true; 
@@ -131,11 +138,34 @@ public class EnforcedHillClimbingSearch extends Search {
 		return filtered;
 	}
 
-	public void historyCheck(State s) {
+	public boolean historyCheck(State s) {
 		Integer hash = Integer.valueOf(s.hashCode());
 		State D = (State) history.get(hash);
 		if(history.contains(hash) && D.equals(s)) {
 			((STRIPSState) D).copyInto((STRIPSState)s);
+			return true;
+		}
+		return false;
+	}
+
+	private void waitForEvaluation(StateEvaluationManager SEM, State succ) {
+		if(historyCheck(succ)) {
+			return;
+		}
+
+
+		if(SEM.done)
+			return;
+		if(SEM.stateEvaluating(succ)) {
+			try {
+				synchronized(SEM) {
+					SEM.wait();
+				}
+			} catch (Exception e) {
+				System.out.println("Interrupt Exception: " + e);
+			}
+		}else {
+			// System.out.println(((STRIPSState) succ).getHValue());
 		}
 	}
 
@@ -144,12 +174,10 @@ public class EnforcedHillClimbingSearch extends Search {
 		if (start.goalReached()) {
 			return start;
 		}
-
 		needToVisit(start); 
 		open.add(start);
 		bestHValue = start.getHValue();
-
-		javaff.JavaFF.infoOutput.println(bestHValue);
+		// javaff.JavaFF.infoOutput.println(bestHValue);
 		State s = null; State bestState = start;
 		int badEncounters = 0;
 
@@ -162,13 +190,20 @@ public class EnforcedHillClimbingSearch extends Search {
 			// TO DO: This seems to give a better solution than average: Test this.
 			subGoalsReached = reachedSubGoals(s);
 			successors = filterGoalRemovingState(successors);
-
 			successors.add(((STRIPSState) s).applyRPG());
+
 			Iterator succItr = successors.iterator();
+			State succ = (State) succItr.next();
+
+			Set copy = new HashSet(successors);
+			copy.remove(succ);
+			StateEvaluationManager SEM = new StateEvaluationManager(copy);
+			SEM.setRPG(((STRIPSState) s).getRPG());
+			SEM.start();
+			
 			while (succItr.hasNext()) {
-				State succ = (State) succItr.next(); 
 				if (needToVisit(succ)) {
-					historyCheck(succ);
+					waitForEvaluation(SEM, succ);
 					if (succ.goalReached()) { 
 						return succ;
 					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
@@ -183,11 +218,25 @@ public class EnforcedHillClimbingSearch extends Search {
 				}
 				if(open.size() > 1 ) {
 					badEncounters++;
-					if(badEncounters > 50)
+					if(badEncounters >= maxBadEncounter) {
+						try {
+							SEM.join();
+						} catch (Exception e) {
+							System.out.println("Interrupt Exception 2: " + e);
+						}
 						return bestState;
+					}
 				}
+				succ = (State) succItr.next(); 
 			}
 
+			// TODO
+			try {
+				SEM.join();
+			} catch (Exception e) {
+				System.out.println("Interrupt Exception 2: " + e);
+			}
+			
 		}
 
 		return bestState;

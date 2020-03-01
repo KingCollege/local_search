@@ -12,7 +12,7 @@ import javaff.planning.State;
 import javaff.search.Search;
 import javaff.threading.StateThread;
 
-public class MultiThreadStateManager{
+public class MultiThreadStateManager {
     private Set states = null;
     private RelaxedPlanningGraph original = null;
     private Set<StateThread> threads;
@@ -22,9 +22,8 @@ public class MultiThreadStateManager{
         original = rpg;
     }
 
-    public void start(Hashtable closed) {
+    public void start() {
         try {
-            StateThread.closed = closed;
             threads = new HashSet<StateThread>();
             int i =0;
             for(Object o : states) {
@@ -36,6 +35,12 @@ public class MultiThreadStateManager{
         } catch (Exception e) {
             System.out.println( "Error from MultiThreadStateManager: "+e);
         }
+    }
+
+    public boolean finished() {
+        if(Thread.activeCount() < 2)
+            return true;
+        return false;
     }
 
     public void join() {

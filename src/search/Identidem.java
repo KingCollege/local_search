@@ -1,6 +1,7 @@
 package javaff.search;
 
 import javaff.planning.State;
+import javaff.search.Search;
 import javaff.search.SuccessorSelector;
 import javaff.threading.MultiThreadStateManager;
 import javaff.threading.StateThread;
@@ -25,16 +26,18 @@ import java.util.Hashtable;
 import java.util.Iterator;
 
 public class Identidem extends Search {
+    private static int restarts = 0;
+    private static int maxFailCount = 32;
+    private static int failCount = 0;
+
 	protected BigDecimal bestHValue;
     protected SuccessorSelector selector;
     protected Hashtable history;
     protected Filter filter = null;
     
-    private int maxFailCount = 32;
-    private int failCount = 0;
     private int iterations = 5;
     private int initialDepthBound = 10;
-    private int probes = 60;
+    private int probes = 10;
     private int neighbourSize = javaff.JavaFF.MAX_THREAD_SIZE - 1;
     private double maxBias = 1.5;
     
@@ -49,19 +52,8 @@ public class Identidem extends Search {
 		setComparator(c);
 	}
     
-    public Hashtable getHistory() {
-		return history;
-	}
-
-	public void setHistory(Hashtable hs) {
-		history = hs;
-	}
-
-    public void setFailCount(int failCount) {
-        this.failCount = failCount;
-    }
-    public int getFailCount() {
-        return failCount;
+    public void setBias(double b) {
+        maxBias = b;
     }
 
     public void setInitialState(State s) {
@@ -74,21 +66,17 @@ public class Identidem extends Search {
 
     public State search() {
         int depth = initialDepthBound;
+        State localMin = start;
         for(int i = 0; i< iterations; ++i) {
             for(int p = 0; p < probes; ++p) {
-                State localMin = start;
                 double bias = maxBias;
                 for(int d = 0; d < depth; ++d) {
-                    // long startTime = System.currentTimeMillis();
-                    //
+
                     Set actions = actionEvaluation(localMin, localMin.appliedAction);
                     Set neighbour = localMin.getNextStates(actions);
-                    // long endTime = System.currentTimeMillis();
-                    // System.out.println("Process: " + ((endTime - startTime)/ 1000.00));
                     State rpgState = ((STRIPSState) localMin).applyRPG();
                     MultiThreadStateManager manager = new MultiThreadStateManager(neighbour, ((STRIPSState) localMin).getRPG());
-                    manager.start(history);
-
+                    manager.start();
                     rpgState.getHValue();
                     manager.join();
                     neighbour.add(rpgState);
@@ -102,7 +90,11 @@ public class Identidem extends Search {
                 failCount++;
                 if(failCount >= maxFailCount) {
                     failCount = 0;
-                    return localMin;
+                    restarts++;
+                    if(restarts % 3 == 0) {
+                        maxFailCount *= 2;
+                    }
+                    return null;
                 }
 
                 bias = biasRate( p/((double)probes) );
@@ -126,13 +118,14 @@ public class Identidem extends Search {
     private double biasRate(double x) {
         // TO DO: Test different bias rates
         double y = -Math.pow(x, 2) + maxBias;
-        if (y <= 0.5)
-            return 0.5;
+        if (y <= 0.1)
+            return 0.1;
         return y;
     }
 
     private Set actionEvaluation(State s, Action p) {
         Set actions = filter.getActions(s);
+        actions = goalRemovingFilter(s, actions);
         if(actions.size() <= neighbourSize) {
             return actions;
         }
@@ -169,5 +162,31 @@ public class Identidem extends Search {
             }
         }
         return neighbourActions;
+    }
+
+    private boolean goalRemovingAction(State s, Action a) {
+        Set goals = new HashSet(s.goal.getConditionalPropositions());
+        Set facts = new HashSet(((STRIPSState) s).facts);
+        facts.retainAll(goals);
+        State ss = s.apply(a);
+        Set newFacts = new HashSet(((STRIPSState) ss).facts);
+        newFacts.retainAll(goals);
+        if (newFacts.size() < facts.size()) {
+            // System.out.println("Facts: " + facts);
+            // System.out.println("New Facts: " + newFacts);
+            return true;
+        }
+        return false;
+    }
+
+    private Set goalRemovingFilter(State s, Set actions) {
+        Set filter = new HashSet();
+        for(Object o : actions) {
+            Action a = (Action) o;
+            if (!goalRemovingAction(s, a)) {
+                filter.add(a);
+            }
+        }
+        return filter;
     }
 }

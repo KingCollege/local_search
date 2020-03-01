@@ -95,6 +95,7 @@ public class PlanningGraph implements Cloneable
 		{
 			scheduledFacts = createActionLayer(scheduledActs, num_layers);
 			++ num_layers;
+			// System.out.println(java.lang.Thread.currentThread().getName() + ": "+ num_layers + "| Instance: " + this);
 			scheduledActs = createFactLayer(scheduledFacts, num_layers);
 
 			if (goalMet() && !goalMutex())

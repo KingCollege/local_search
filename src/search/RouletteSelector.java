@@ -1,5 +1,6 @@
 package javaff.search;
 
+import javaff.planning.STRIPSState;
 import javaff.planning.State;
 import java.util.Iterator;
 import java.util.Set;

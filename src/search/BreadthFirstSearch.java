@@ -30,9 +30,13 @@ package javaff.search;
 
 import javaff.planning.State;
 import javaff.planning.Filter;
+import javaff.planning.STRIPSState;
+
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.Set;
 
 public class BreadthFirstSearch extends Search
 {
@@ -40,6 +44,12 @@ public class BreadthFirstSearch extends Search
 	protected LinkedList open;
 	protected Hashtable closed;
 	protected Filter filter = null;
+
+	protected int maxDepth = -1;
+	protected Set subGoalsReached;
+
+	public double repeatedState = 0.0;
+	public double newStates = 0.0;
 
 	public BreadthFirstSearch(State s)
 	{
@@ -53,10 +63,22 @@ public class BreadthFirstSearch extends Search
 		filter = f;
 	}
 
+	public void setDepth(int d) {
+		maxDepth = d;
+	}
+
+	public LinkedList getOpen() {
+		return open;
+	}
 
 	public void updateOpen(State S)
     {
-		open.addAll(S.getNextStates(filter.getActions(S)));
+		Set successors = S.getNextStates(filter.getActions(S));
+		subGoalsReached = reachedSubGoals(S);
+		successors = filterGoalRemovingState(successors);
+
+		// open.addAll(S.getNextStates(filter.getActions(S)));
+		open.addAll(successors);
 	}
 
 	public State removeNext()
@@ -68,19 +90,46 @@ public class BreadthFirstSearch extends Search
 		Integer Shash = new Integer(s.hashCode());
 		State D = (State) closed.get(Shash);
 		
-		if (closed.containsKey(Shash) && D.equals(s)) return false;
-		
+		if (closed.containsKey(Shash) && D.equals(s)) {
+			return false;
+		}
 		closed.put(Shash, s);
 		return true;
+	}
+
+	public Set reachedSubGoals(State s) {
+		STRIPSState strip = (STRIPSState) s;
+		Set goals = s.goal.getConditionalPropositions();
+		Set facts = strip.facts;
+		Set reached = new HashSet();
+		for(Object sg: goals) {
+			if(facts.contains(sg)) {
+				reached.add(sg);
+			}
+		}
+		return reached;
+	}
+
+	public Set filterGoalRemovingState(Set states) {
+		Set filtered = new HashSet();
+		for(Object s: states) {
+			State state = (State) s;
+			Set r = reachedSubGoals(state);
+			if(r.size() >= subGoalsReached.size()) {
+				filtered.add(state);
+			}
+		}
+		return filtered;
 	}
 
 	public State search() {
 		
 		open.add(start);
-
+		int depth =0;
+		State s = null;
 		while (!open.isEmpty())
 		{
-			State s = removeNext();
+			s = removeNext();
 			if (needToVisit(s)) {
 				++nodeCount;
 				if (s.goalReached()) {
@@ -89,8 +138,14 @@ public class BreadthFirstSearch extends Search
 					updateOpen(s);
 				}
 			}
-			
+
+			if(maxDepth != -1) {
+				depth++;
+				if(depth == maxDepth)
+					return s;
+			}
 		}
-		return null;
+		// System.out.println("BFS returns s");
+		return s;
 	}
 }

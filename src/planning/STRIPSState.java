@@ -84,7 +84,6 @@ public class STRIPSState extends State implements Cloneable
 		TotalOrderPlan p = (TotalOrderPlan) plan.clone();
 		STRIPSState SS = new STRIPSState(actions, nf, goal, p);
 		SS.setRPG(RPG);
-		System.out.println("Cloned?");
 //		SS.setFilter(filter);
 		return SS;
 	}
@@ -136,9 +135,6 @@ public class STRIPSState extends State implements Cloneable
 		if (!RPCalculated)
 		{
 			RelaxedPlan = (TotalOrderPlan) RPG.getPlan(this);
-			// if(RelaxedPlan == null) {
-			// 	RelaxedPlan = (TotalOrderPlan) RPG.getPlan(this);//Second chance
-			// }
 			helpfulActions = new HashSet();
 			if (!(RelaxedPlan == null))
 			{

@@ -33,7 +33,7 @@ import javaff.planning.Filter;
 import java.util.Comparator;
 import java.util.TreeSet;
 import java.util.Hashtable;
-
+import java.util.Set;
 
 public class BestFirstSearch extends Search
 {
@@ -41,7 +41,8 @@ public class BestFirstSearch extends Search
 	protected Hashtable closed;
 	protected TreeSet open;
 	protected Filter filter = null;
-	
+	protected int maxDepth = -1;
+
 	public BestFirstSearch(State s)
     {
 		this(s, new HValueComparator());
@@ -54,6 +55,14 @@ public class BestFirstSearch extends Search
 		
 		closed = new Hashtable();
 		open = new TreeSet(comp);
+	}
+
+	public Set getOpen() {
+		return open;
+	}
+
+	public void setDepth(int d) {
+		maxDepth = d;
 	}
 
 	public void setFilter(Filter f)
@@ -95,7 +104,7 @@ public class BestFirstSearch extends Search
 	public State search() {
 		
 		open.add(start);
-
+		int d = 0;
 		while (!open.isEmpty())
 		{
 			State s = removeNext();
@@ -106,6 +115,11 @@ public class BestFirstSearch extends Search
 				} else {
 					updateOpen(s);
 				}
+			}
+			if (maxDepth != -1) {
+				d++;
+				if(d == maxDepth)
+					return s;
 			}
 			
 		}

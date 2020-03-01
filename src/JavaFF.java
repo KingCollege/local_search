@@ -38,6 +38,7 @@ import javaff.parser.PDDL21parser;
 import javaff.planning.State;
 import javaff.planning.TemporalMetricState;
 import javaff.planning.RelaxedTemporalMetricPlanningGraph;
+import javaff.planning.STRIPSState;
 import javaff.planning.HelpfulFilter;
 import javaff.planning.NullFilter;
 import javaff.planning.RelaxedPlanningGraph;
@@ -45,6 +46,7 @@ import javaff.scheduling.Scheduler;
 import javaff.scheduling.JavaFFScheduler;
 import javaff.search.Search;
 import javaff.search.SimulatedAnnealing;
+import javaff.threading.MultiThreadSearchManager;
 import javaff.search.BestFirstSearch;
 import javaff.search.BestSuccessorSelector;
 import javaff.search.EnforcedHillClimbingSearch;
@@ -63,6 +65,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -139,6 +142,7 @@ public class JavaFF {
 
 		// Get the initial state
 		TemporalMetricState initialState = ground.getTemporalMetricInitialState();
+		// infoOutput.println(((STRIPSState) initialState).getRPG());
 		for(int i = 0; i < clonedRPG.length; ++i) {
 			clonedRPG[i] = ground.getClone().getRPG();
 			// infoOutput.println(clonedRPG[i]);
@@ -206,55 +210,87 @@ public class JavaFF {
 
 	}
 
+	public static State multithreadSearch(Set candidateStates) {
+		MultiThreadSearchManager MTSM = new MultiThreadSearchManager(candidateStates);
+		State best = null;
+		while(candidateStates.size() > 0) {
+			// System.out.println(candidateStates.size());
+			MTSM.start();
+			MTSM.join();
+			if(best == null) {best = MTSM.getBest();}
+			else{
+				if (best.getHValue().compareTo(MTSM.getBest().getHValue()) > 0) {
+					best = MTSM.getBest();
+				}
+			}
+		}
+		return best;
+	}
+
+	public static State multiThreadSearch(State s) {
+		Set temp = new HashSet();
+		temp.add(s);
+		return multithreadSearch(temp);
+	}
+
+	public static State EHC(State initialState) {
+		State goalState = null;
+		EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
+		EHC.setFilter(HelpfulFilter.getInstance());
+		goalState = EHC.search();
+		Search.history.putAll(EHC.getClosedList());
+
+		RelaxedPlanningGraph original = ((STRIPSState) goalState).getRPG();
+			
+		if(goalState.goalReached()) {return goalState;}
+		Set open = EHC.getOpenList();
+		if (open.size() == 0) {open.add(goalState);}
+		State temp = multithreadSearch(open);
+		if(temp != null) {
+			if (goalState.getHValue().compareTo(temp.getHValue()) > 0) {
+				goalState = temp;
+			}
+		}
+		((STRIPSState) goalState).setRPG(original);
+
+		return goalState;
+	}
+
 	public static State performFFSearch(TemporalMetricState initialState) {
 		// Identidem idtdm = new Identidem(initialState);
+		// System.out.println("Initial RPG: "+((STRIPSState) initialState).getRPG());
 		State goalState = initialState;
-		Hashtable history = new Hashtable();
-		int currentFailCount = 0;
-		while(!goalState.goalReached()) {//for(int i = 0; i < 50; ++ i) {
-			EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(goalState);
-			EHC.setFilter(HelpfulFilter.getInstance());	
-			EHC.setHistory(history);
-			goalState = EHC.search();
+		double start = System.currentTimeMillis();
 
-			if(goalState.goalReached()) {
-				return goalState;
-			}
+		while(!goalState.goalReached()) {
+			goalState = EHC(goalState);
+			if(goalState.goalReached()) {return goalState;}
+			// RelaxedPlanningGraph original = ((STRIPSState) goalState).getRPG();
+			// // CLONE COPIES OF GOAL STATE
+			// State temp = multiThreadSearch(goalState);
+			// if(temp != null) {
+			// 	if (goalState.getHValue().compareTo(temp.getHValue()) > 0) {
+			// 		goalState = temp;
+			// 	}
+			// }
+			// ((STRIPSState) goalState).setRPG(original);
+			// if(goalState.goalReached()) {return goalState;}
 
-			infoOutput.println("EHC Failed, using Identidem to escape");
 			Identidem IDTM = new Identidem(goalState);
-			history.putAll(EHC.getClosedList());
-			IDTM.setHistory(history);
 			IDTM.setSelector(RouletteSelector.getInstance());
-			IDTM.setFailCount(currentFailCount);
 			goalState = IDTM.search();
-			currentFailCount = IDTM.getFailCount();
-			if(goalState != null) {
-				infoOutput.println("Identidem escaped");
-			}
-			else{
+
+			if(goalState == null) {
 				infoOutput.println("Identidem failed");
 				goalState = initialState;
 			}
+			
+			// TIME OUT
+			double end = System.currentTimeMillis();
+			if(end - start >= 1800000) {
+				return null;
+			}
 		}
-		
-		// while(!goalState.goalReached()) {
-		// 	Identidem IDTM = new Identidem(goalState);
-		// 	IDTM.setSelector(RouletteSelector.getInstance());
-		// 	IDTM.setFailCount(currentFailCount);
-		// 	goalState = IDTM.search();
-		// 	currentFailCount = IDTM.getFailCount();
-		// 	if(goalState == null) {
-		// 		goalState = initialState;
-		// 		System.out.println("Search Aborted");
-		// 		continue;
-		// 	}
-		// 	// if(goalState.goalReached()) {
-		// 	// 	return goalState;
-		// 	// }
-
-		// }
-		
 		
 
 		// Chromosome.setAncestor( ((TotalOrderPlan) goalState.getSolution()).getOrderedActions());
