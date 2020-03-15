@@ -18,6 +18,7 @@ import javaff.search.SimulatedAnnealing;
 import javaff.search.BestFirstSearch;
 import javaff.search.BreadthFirstSearch;
 import javaff.search.EnforcedHillClimbingSearch;
+import javaff.search.Identidem;
 import javaff.search.RouletteSelector;
 
 public class SearchThread extends Thread {
@@ -32,7 +33,6 @@ public class SearchThread extends Thread {
         this.maxDepth = 5;//30
         ((STRIPSState) this.start).setRPG(rpg);
         searchResult = new HashSet();
-        start();
     }
 
     // Different types of search for each thread = Portfolio
@@ -41,7 +41,7 @@ public class SearchThread extends Thread {
     }
 
     public javaff.planning.State getGoal() {
-        if(goalState.goalReached()) {
+        if(goalState != null && goalState.goalReached()) {
             return goalState;
         }
         return null;
@@ -55,8 +55,14 @@ public class SearchThread extends Thread {
         // System.out.println(Thread.currentThread().getName() + ":" + ((STRIPSState) this.start).getRPG());
         try {
             switch (t) {
+                case EHC:
+                    enforcedHCSearch();
+                    break;
                 case BFS:
                     breadthFirstSearch();
+                    break;
+                case IDTM:
+                    identidem();
                     break;
                 case SA:
                     simulatedAnnealing();
@@ -72,7 +78,7 @@ public class SearchThread extends Thread {
     private void breadthFirstSearch() {
         BreadthFirstSearch bfs = new BreadthFirstSearch(start);
         bfs.setFilter(HelpfulFilter.getInstance());
-        bfs.setDepth(15);
+        bfs.setDepth(100);
         goalState = bfs.search();
         searchResult.add(goalState);
     } 
@@ -84,17 +90,25 @@ public class SearchThread extends Thread {
         goalState = search.search();
         searchResult = new HashSet();
         searchResult.add(goalState);
+        Search.history.putAll(search.getClosedList());
     }
 
     private void simulatedAnnealing() {
         SimulatedAnnealing sa = new SimulatedAnnealing(start);
-        sa.setFilter(NullFilter.getInstance());
+        sa.setFilter(HelpfulFilter.getInstance());
         sa.setSelector(RouletteSelector.getInstance());
         sa.setTemperature(25);
         sa.setAlpha(0.9);
         sa.setMinTemp(0.1);
         sa.setIterations(10);
         goalState = sa.search();
+        searchResult.add(goalState);
+    }
+
+    private void identidem() {
+        Identidem IDTM = new Identidem(start);
+        IDTM.setSelector(RouletteSelector.getInstance());
+        goalState = IDTM.search();
         searchResult.add(goalState);
     }
 

@@ -47,6 +47,8 @@ import javaff.scheduling.JavaFFScheduler;
 import javaff.search.Search;
 import javaff.search.SimulatedAnnealing;
 import javaff.threading.MultiThreadSearchManager;
+import javaff.threading.SearchThread;
+import javaff.threading.SearchType;
 import javaff.search.BestFirstSearch;
 import javaff.search.BestSuccessorSelector;
 import javaff.search.EnforcedHillClimbingSearch;
@@ -85,6 +87,7 @@ public class JavaFF {
 	public static PrintStream errorOutput = System.err;
 	public static RelaxedPlanningGraph[] clonedRPG;
 
+	public static GroundProblem ground = null;
 
 	public static void main(String args[]) {
 		EPSILON = EPSILON.setScale(2, RoundingMode.HALF_EVEN);
@@ -115,12 +118,28 @@ public class JavaFF {
 		}
 	}
 
+	public static RelaxedPlanningGraph[] arrayOfRPG(int size) {
+		RelaxedPlanningGraph[] arry = new RelaxedPlanningGraph[size];
+		for(int i = 0; i < size; ++i) {
+			arry[i] = ground.getClone().getRPG();
+		}
+		return arry;
+	}
+
+	public static State[] arrayOfInitial(int size) {
+		State[] arry = new State[size];
+		for(int i = 0; i < size; ++i) {
+			arry[i] = ground.getClone();
+		}
+		return arry;
+	}
+
 	public static Plan plan(File dFile, File pFile) {
 		// ********************************
 		// Parse and Ground the Problem
 		// ********************************
 		long startTime = System.currentTimeMillis();
-		clonedRPG = new RelaxedPlanningGraph[MAX_THREAD_SIZE];
+		// clonedRPG = new RelaxedPlanningGraph[MAX_THREAD_SIZE];
 		UngroundProblem unground = PDDL21parser.parseFiles(dFile, pFile);
 
 		if (unground == null) {
@@ -131,9 +150,9 @@ public class JavaFF {
 		// PDDLPrinter.printDomainFile(unground, System.out);
 		// PDDLPrinter.printProblemFile(unground, System.out);
 
-		GroundProblem ground = unground.ground();
-
-		Chromosome.updateGeneTable(ground.getActions());
+		// GroundProblem 
+		ground = unground.ground();
+	
 		long afterGrounding = System.currentTimeMillis();
 
 		// ********************************
@@ -142,13 +161,6 @@ public class JavaFF {
 
 		// Get the initial state
 		TemporalMetricState initialState = ground.getTemporalMetricInitialState();
-		// infoOutput.println(((STRIPSState) initialState).getRPG());
-		for(int i = 0; i < clonedRPG.length; ++i) {
-			clonedRPG[i] = ground.getClone().getRPG();
-			// infoOutput.println(clonedRPG[i]);
-		}
-
-		// Chromosome.setInitialState(initialState);
 		State goalState = goalState = performFFSearch(initialState);
 
 		long afterPlanning = System.currentTimeMillis();
@@ -210,71 +222,29 @@ public class JavaFF {
 
 	}
 
-	public static State multithreadSearch(Set candidateStates) {
-		MultiThreadSearchManager MTSM = new MultiThreadSearchManager(candidateStates);
-		State best = null;
-		while(candidateStates.size() > 0) {
-			// System.out.println(candidateStates.size());
-			MTSM.start();
-			MTSM.join();
-			if(best == null) {best = MTSM.getBest();}
-			else{
-				if (best.getHValue().compareTo(MTSM.getBest().getHValue()) > 0) {
-					best = MTSM.getBest();
-				}
-			}
-		}
-		return best;
-	}
-
-	public static State multiThreadSearch(State s) {
-		Set temp = new HashSet();
-		temp.add(s);
-		return multithreadSearch(temp);
-	}
-
 	public static State EHC(State initialState) {
 		State goalState = null;
 		EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
 		EHC.setFilter(HelpfulFilter.getInstance());
 		goalState = EHC.search();
 		Search.history.putAll(EHC.getClosedList());
-
-		RelaxedPlanningGraph original = ((STRIPSState) goalState).getRPG();
-			
-		if(goalState.goalReached()) {return goalState;}
-		Set open = EHC.getOpenList();
-		if (open.size() == 0) {open.add(goalState);}
-		State temp = multithreadSearch(open);
-		if(temp != null) {
-			if (goalState.getHValue().compareTo(temp.getHValue()) > 0) {
-				goalState = temp;
-			}
-		}
-		((STRIPSState) goalState).setRPG(original);
-
 		return goalState;
 	}
 
 	public static State performFFSearch(TemporalMetricState initialState) {
 		// Identidem idtdm = new Identidem(initialState);
 		// System.out.println("Initial RPG: "+((STRIPSState) initialState).getRPG());
+
 		State goalState = initialState;
 		double start = System.currentTimeMillis();
 
 		while(!goalState.goalReached()) {
 			goalState = EHC(goalState);
 			if(goalState.goalReached()) {return goalState;}
-			// RelaxedPlanningGraph original = ((STRIPSState) goalState).getRPG();
-			// // CLONE COPIES OF GOAL STATE
-			// State temp = multiThreadSearch(goalState);
-			// if(temp != null) {
-			// 	if (goalState.getHValue().compareTo(temp.getHValue()) > 0) {
-			// 		goalState = temp;
-			// 	}
-			// }
-			// ((STRIPSState) goalState).setRPG(original);
-			// if(goalState.goalReached()) {return goalState;}
+			// 	// System.out.println("EHC failed, using Identidem");
+				
+			// GeneticAlgorithm GA = new GeneticAlgorithm(goalState);
+			// goalState = GA.search();
 
 			Identidem IDTM = new Identidem(goalState);
 			IDTM.setSelector(RouletteSelector.getInstance());
@@ -282,7 +252,12 @@ public class JavaFF {
 
 			if(goalState == null) {
 				infoOutput.println("Identidem failed");
-				goalState = initialState;
+				IDTM = new Identidem(initialState);
+				IDTM.setSelector(RouletteSelector.getInstance());
+				goalState = IDTM.search();
+				if(goalState == null) {
+					goalState = initialState;
+				}
 			}
 			
 			// TIME OUT
@@ -291,21 +266,9 @@ public class JavaFF {
 				return null;
 			}
 		}
+
+
 		
-
-		// Chromosome.setAncestor( ((TotalOrderPlan) goalState.getSolution()).getOrderedActions());
-		// PriorityQueue chroms = Chromosome.initialPopulation(200);
-		// GeneticAlgorithm GA = new GeneticAlgorithm(chroms);
-		// GA.selection();
-
-		if (goalState == null || !goalState.goalReached()) 
-		{
-			infoOutput.println("Local Search Failed, Resorting to Global Search");
-			BestFirstSearch BFS = new BestFirstSearch(initialState);
-			BFS.setFilter(NullFilter.getInstance());
-			goalState = BFS.search();
-		}
-
 		return goalState;
 
 	}

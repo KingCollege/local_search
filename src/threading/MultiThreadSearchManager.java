@@ -18,7 +18,7 @@ import javaff.search.SuccessorSelector;
 import javaff.threading.SearchThread;;
 
 public class MultiThreadSearchManager {
-    public static SearchType[] SEARCH_TYPES;
+    public static int MAX_SEARCH_THREADS = 2;
 
     private Set initialCandidates;
     private Set<SearchThread> searchThreads;
@@ -30,18 +30,26 @@ public class MultiThreadSearchManager {
         searchThreads = new HashSet<SearchThread>();
     }
 
+    public MultiThreadSearchManager(javaff.planning.State initialState) {
+        this.initialCandidates = new HashSet();
+        initialCandidates.add(initialState);
+        searchThreads = new HashSet<SearchThread>();
+    }
+
     public void start() {
         int i = 0;
         Set remove = new HashSet();
+        RelaxedPlanningGraph[] rpgs = javaff.JavaFF.arrayOfRPG(MAX_SEARCH_THREADS);
         for(Object obj : initialCandidates) { // 0, 1, 2
             javaff.planning.State initial = (javaff.planning.State) obj;
             remove.add(initial);
-            SearchThread st = new SearchThread(initial, javaff.JavaFF.clonedRPG[i]);
+            SearchThread st = new SearchThread(initial, rpgs[i]);
             int j = i % SearchType.values().length;
-            st.setSearchType(SearchType.SA);
+            st.setSearchType(SearchType.IDTM);
+            st.start();
             searchThreads.add(st);
             i++;
-            if(i == javaff.JavaFF.MAX_THREAD_SIZE) 
+            if(i == MAX_SEARCH_THREADS) 
                 break;
         }
         initialCandidates.removeAll(remove);

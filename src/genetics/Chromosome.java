@@ -4,7 +4,17 @@ package javaff.genetics;
 import java.util.Set;
 import javaff.JavaFF;
 import javaff.data.Action;
+import javaff.data.TotalOrderPlan;
+import javaff.planning.Filter;
+import javaff.planning.HelpfulFilter;
+import javaff.planning.NullFilter;
+import javaff.planning.RelaxedPlanningGraph;
+import javaff.planning.STRIPSState;
 import javaff.planning.State;
+import javaff.planning.TemporalMetricState;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.HashSet;
@@ -15,124 +25,185 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Chromosome {
-    private static Hashtable geneTable = new Hashtable();
-    private static Chromosome ancestor;
-    private static State initialState;
+    public static State initialState;
+    public static Filter filter = NullFilter.getInstance();
+    private double fitness = -1;
+    private ArrayList genes;
+    private boolean isValidPlan = false;
+    public State s = null;
+    public TotalOrderPlan plan = new TotalOrderPlan();
 
-    private double fitness;
-    private LinkedList genes;
-    private LinkedList defectGenes;
+    public Chromosome(ArrayList genes) {
+        this.genes = new ArrayList(genes);
+    }
 
-    public Chromosome(LinkedList genes) {
-        this.genes = genes;
-        this.defectGenes = new LinkedList();
-        calculateFitness();
+    public Chromosome() {
+        this.genes = new ArrayList();
+    }
+
+    public double getHValue() {
+        if(s != null) {
+            if(isValidPlan){
+                return 0;
+            }
+            return s.getHValue().doubleValue();
+        }
+        return javaff.JavaFF.MAX_DURATION.doubleValue();
+    }
+
+    public ArrayList getGenes() {
+        return genes;
+    }
+
+    public boolean planFound() {
+        return isValidPlan;
     }
 
     public double getFitness() {
+        if(fitness == -1) {
+            calculateFitness();
+        }
         return fitness;
     }
 
-    private void calculateFitness() {
-        Iterator itr = genes.iterator();
-        State s = initialState;
-        double goodGenes = 0;
-        while(itr.hasNext()) {
-            int copy = ((Integer) itr.next()).intValue();
-            Action g = (Action) geneTable.get(copy);
-            boolean applicable = g.isApplicable(s);
-            if (applicable) {
-                goodGenes++;
-                s = s.apply(g);
-            }else{
-                defectGenes.add(copy);
-            }
-        }
-
-        // We will know that, if a chromosome is a valid plan, if it ends up in a goal state.
-        double ratio = goodGenes/genes.size();
-        double heursitic = s.getHValue().doubleValue();
-        if (heursitic > 0) {
-            ratio = ratio + ( 1 / heursitic);
-        }
-        // System.out.println(ratio);
-        fitness = ratio;
-    }
-
-    public static void setAncestor(List actions) {
-        if(ancestor == null) {
-            LinkedList g = new LinkedList();
-            Iterator itr = actions.iterator();
-            while(itr.hasNext()) {
-                Action a = (Action) itr.next();
-                int key = a.hashCode();
-                // System.out.println( ((Action) geneTable.get(key)).toString() );
-                // System.out.println( a.toString());
-                g.add(key);
-            }
-
-            ancestor = new Chromosome(g);
-        }
-    }
-
-    public static void setInitialState(State s) {
-        initialState = s;
-    }
-
-    public static void updateGeneTable(Set actions) {
-        Iterator itr = actions.iterator();
-        while(itr.hasNext()){
-            Action a = (Action) itr.next();
-            int key = a.hashCode();
-            // System.out.println(a.toString());
-            geneTable.put(key, a);
-        }
-    }
-
-    public static PriorityQueue initialPopulation(int size) {
-        PriorityQueue chromosomes = new PriorityQueue<Chromosome>(new Comparator<Chromosome>() {
-            @Override
-            public int compare(Chromosome o1, Chromosome o2) {
-                return - Double.compare(o1.getFitness(), o2.getFitness());
-            }
-        });
-
-        LinkedList ancestorGenes = ancestor.genes;
-        while(size > 0) {
-            // How many genes are potentially inherited
-            int inheritance = javaff.JavaFF.generator.nextInt(ancestorGenes.size());
-            LinkedList pGene = new LinkedList();
-            while(inheritance > 0) {
-                // Choose a particular gene randomly
-                int gene = javaff.JavaFF.generator.nextInt(ancestorGenes.size());
-                if(gene >= pGene.size()) {
-                    int offset = gene - pGene.size();
-                    addRandomGenes(pGene, offset);
-                    pGene.add(ancestorGenes.get(gene));
+    // Fitness is based on heuristics
+    public void calculateFitness() {
+        for(Object g : genes) {
+            Action a = (Action )g;
+            Boolean applicable = a.isApplicable(s);
+            if(applicable) {
+                s = s.apply(a);
+                plan.addAction(a);
+                if(s.goalReached()) {
+                    fitness = 1;
+                    isValidPlan = true;
+                    System.out.print(s.getSolution().getActions().size()  + ",");
+                    plan = (TotalOrderPlan) s.getSolution();
+                    return;
                 }
-                inheritance--;
             }
-
-            if (pGene.size() < ancestorGenes.size()*0.8) {
-                int offset = (int)(ancestorGenes.size() * 0.8) - pGene.size();
-                addRandomGenes(pGene, offset);
-            }
-            // System.out.println("Chromosome: " + (200 - size));
-            // pGene.forEach(g ->  System.out.println( ((Action) geneTable.get(g)).toString()) );
-            Chromosome c = new Chromosome(pGene);
-            chromosomes.add(c);
-            size--;
         }
-
-        return chromosomes;
+        BigDecimal h = s.getHValue();
+        if(h.doubleValue() == 0) {
+            fitness = 1;
+        }else{
+            fitness = 1/h.doubleValue();
+        }
+        ((STRIPSState) s).setRPG(((STRIPSState) initialState).getRPG());
     }
 
-    private static void addRandomGenes(LinkedList g, int amount) {
-        while(amount > 0) {
-            g.add((geneTable.keySet().toArray())[javaff.JavaFF.generator.nextInt(geneTable.keySet().size())]);
-            amount--;
+    public void addGene(Action a) {
+        genes.add(a);
+    }
+
+    // Applies a cross-over mask on two chromosomes, if one is longer, add remaining genes
+    // to shorter chromosome. After cross-over, condense the chromosomes (remove any actions that are not applicable).
+    public Chromosome crossOver(Chromosome longer, char[] mask) {
+        ArrayList child = new ArrayList(genes);
+        List remove = new ArrayList();
+        for(int i = 0; i < mask.length; i++) {
+            if(mask[i] == '1') {
+                if(i < child.size()) {
+                    // Swaps
+                    Action temp = (Action) child.get(i);
+                    child.set(i, longer.genes.get(i));
+                    longer.genes.set(i, temp);
+                }else{
+                    // Adds remaining gene to this, remove from longer.
+                    child.add(longer.genes.get(i));
+                    remove.add(longer.genes.get(i));
+                }
+            }
+        }
+        longer.genes.removeAll(remove);
+        Chromosome c = new Chromosome(child);
+        return c;
+    }
+
+    // For each 1 in mask, a random action is selected from current time step of state. For each 0 in
+    // mask, check if current action is still applicable, if so keep it, if not get a random applicable action.
+    public Chromosome mutation(char[] mask) {
+        ArrayList child = new ArrayList();
+        State st = (State)((STRIPSState) initialState).clone();
+        for(int i=0; i < mask.length; i++) {
+            if(mask[i] == '1') {
+                Action a = randomApplicableAction(st, i);
+                if(a == null) {
+                    continue;
+                }
+                child.add(a);
+                st = st.apply(a);
+            }else{
+                Action a = (Action) genes.get(i);
+                if(a.isApplicable(st)){
+                    child.add(genes.get(i));
+                    st = st.apply((Action) genes.get(i));
+                }else{
+                    a = randomApplicableAction(st, -1);
+                    if(a == null) {
+                        continue;
+                    }
+                    child.add(a);
+                    st = st.apply(a);
+                }
+            }
+        }
+
+        Chromosome c = new Chromosome(child);
+        c.s = st;
+        return c;
+    }
+
+    public Action randomApplicableAction(State s, int exception) {
+        List actions = new ArrayList(filter.getActions(s));
+        if(actions.size() ==0) {
+            return null;   
+        }
+
+        if(exception > 0){
+            actions.remove(genes.get(exception));
+            if(actions.size() == 0){
+                return (Action) genes.get(exception);
+            }
+        }
+
+        int random = javaff.JavaFF.generator.nextInt(actions.size());
+        return (Action) actions.get(random);
+    }
+
+    
+    // Condenses chromosome by removing any inapplicable actions.
+    public void condense() {
+        s = (State)((STRIPSState) initialState).clone();
+        ArrayList nGene = new ArrayList();
+        for(Object g: genes) {
+            Action a = (Action) g;
+            Boolean applicable = a.isApplicable(s);
+            if(applicable) {
+                s = s.apply(a);
+                nGene.add(a);
+            }
+        }
+        genes = nGene;
+    }
+
+    // Grows chromosome to a certain length
+    public void grow(int length) {
+        int diff = length - genes.size();
+        if(diff < 0) {
+            return;
+        }
+
+        for(int i = 0; i < diff; i++) {
+            Action a = randomApplicableAction(s, -1);
+            if(a == null) {
+                break;
+            }
+            s = s.apply(a);
+            genes.add(a);
         }
     }
+
 
 
 }

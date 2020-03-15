@@ -76,6 +76,8 @@ public class STRIPSState extends State implements Cloneable
 		s.HValue = HValue;
 		s.RelaxedPlan = RelaxedPlan;
 		s.helpfulActions = helpfulActions;
+		// s.facts = new HashSet(facts);
+		// s.actions = new HashSet(actions);
 	}
 
 	public Object clone()
@@ -83,7 +85,9 @@ public class STRIPSState extends State implements Cloneable
 		Set nf = (Set) ((HashSet) facts).clone();
 		TotalOrderPlan p = (TotalOrderPlan) plan.clone();
 		STRIPSState SS = new STRIPSState(actions, nf, goal, p);
+
 		SS.setRPG(RPG);
+		System.out.println(SS);
 //		SS.setFilter(filter);
 		return SS;
 	}

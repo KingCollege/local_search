@@ -29,7 +29,7 @@
 package javaff.search;
 
 import javaff.planning.State;
-import javaff.threading.StateEvaluationManager;
+import javaff.threading.EHCMultiStateEvaluation;
 import javaff.data.Action;
 import javaff.data.strips.OperatorName;
 import javaff.planning.Filter;
@@ -148,28 +148,8 @@ public class EnforcedHillClimbingSearch extends Search {
 		return false;
 	}
 
-	private void waitForEvaluation(StateEvaluationManager SEM, State succ) {
-		if(historyCheck(succ)) {
-			return;
-		}
-
-
-		if(SEM.done)
-			return;
-		if(SEM.stateEvaluating(succ)) {
-			try {
-				synchronized(SEM) {
-					SEM.wait();
-				}
-			} catch (Exception e) {
-				System.out.println("Interrupt Exception: " + e);
-			}
-		}else {
-			// System.out.println(((STRIPSState) succ).getHValue());
-		}
-	}
-
 	public State search() {
+		EHCMultiStateEvaluation.MAX_LIMIT = maxBadEncounter;
 
 		if (start.goalReached()) {
 			return start;
@@ -179,8 +159,6 @@ public class EnforcedHillClimbingSearch extends Search {
 		bestHValue = start.getHValue();
 		// javaff.JavaFF.infoOutput.println(bestHValue);
 		State s = null; State bestState = start;
-		int badEncounters = 0;
-
 		while (!open.isEmpty())
 		{
 			s = removeNext(); 
@@ -190,55 +168,68 @@ public class EnforcedHillClimbingSearch extends Search {
 			// TO DO: This seems to give a better solution than average: Test this.
 			subGoalsReached = reachedSubGoals(s);
 			successors = filterGoalRemovingState(successors);
-			successors.add(((STRIPSState) s).applyRPG());
-
-			Iterator succItr = successors.iterator();
-			State succ = (State) succItr.next();
-
-			Set copy = new HashSet(successors);
-			copy.remove(succ);
-			StateEvaluationManager SEM = new StateEvaluationManager(copy);
-			SEM.setRPG(((STRIPSState) s).getRPG());
-			SEM.start();
 			
-			while (succItr.hasNext()) {
-				if (needToVisit(succ)) {
-					waitForEvaluation(SEM, succ);
-					if (succ.goalReached()) { 
-						return succ;
-					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
-						bestState = succ;
-						bestHValue = succ.getHValue(); 
-						open = new LinkedList(); 
-						open.add(succ);
-						break; 
-					} else { 
-						open.add(succ);
-					}
+			State helpfulState = ((STRIPSState) s).applyRPG();
+			if(helpfulState.goalReached()) {
+				return helpfulState;
+			}
+			if(helpfulState.getHValue().compareTo(bestHValue) < 0) {
+				bestState = helpfulState;
+				bestHValue = helpfulState.getHValue();
+				open = new LinkedList();
+				open.add(bestState);
+			}else {
+				EHCMultiStateEvaluation evaluator = new EHCMultiStateEvaluation(successors, bestHValue);
+				evaluator.setRPG(((STRIPSState) bestState).getRPG());
+				evaluator.start();
+				try {
+					evaluator.join();
+				} catch (Exception e) {
+					System.out.println("EHC error: " + e);
 				}
-				if(open.size() > 1 ) {
-					badEncounters++;
-					if(badEncounters >= maxBadEncounter) {
-						try {
-							SEM.join();
-						} catch (Exception e) {
-							System.out.println("Interrupt Exception 2: " + e);
-						}
-						return bestState;
-					}
+	
+				if(evaluator.getEHCBest() != null) {
+					bestState = evaluator.getEHCBest();
+					bestHValue = bestState.getHValue();
+					open = new LinkedList();
+					open.add(bestState);
+				}else{
+					open.addAll(evaluator.getOpen());
 				}
-				succ = (State) succItr.next(); 
+				if(EHCMultiStateEvaluation.LIMIT >= maxBadEncounter) {
+					EHCMultiStateEvaluation.LIMIT = 0;
+					return bestState;
+				}
 			}
 
-			// TODO
-			try {
-				SEM.join();
-			} catch (Exception e) {
-				System.out.println("Interrupt Exception 2: " + e);
-			}
-			
+
 		}
-
 		return bestState;
 	}
 }
+
+			// successors.add(((STRIPSState) s).applyRPG());
+			// Iterator succItr = successors.iterator();
+			
+			// while (succItr.hasNext()) {
+			// 	State succ = (State) succItr.next();
+			// 	if (needToVisit(succ)) {
+			// 		if (succ.goalReached()) { 
+			// 			return succ;
+			// 		} else if (succ.getHValue().compareTo(bestHValue) < 0) {
+			// 			bestState = succ;
+			// 			bestHValue = succ.getHValue(); 
+			// 			open = new LinkedList(); 
+			// 			open.add(succ);
+			// 			break; 
+			// 		} else { 
+			// 			open.add(succ);
+			// 		}
+			// 	}
+			// 	if(open.size() > 1 ) {
+			// 		badEncounters++;
+			// 		if(badEncounters >= maxBadEncounter) {
+			// 			return bestState;
+			// 		}
+			// 	}
+			// }

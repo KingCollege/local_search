@@ -16,19 +16,26 @@ public class MultiThreadStateManager {
     private Set states = null;
     private RelaxedPlanningGraph original = null;
     private Set<StateThread> threads;
+    private javaff.planning.State goalReached  = null;
 
-    public MultiThreadStateManager(Set states, RelaxedPlanningGraph rpg) {
+    public MultiThreadStateManager(Set states, RelaxedPlanningGraph original) {
         this.states = states;
-        original = rpg;
+        this.original = original;
     }
 
     public void start() {
         try {
             threads = new HashSet<StateThread>();
             int i =0;
+            RelaxedPlanningGraph[] rpgs = javaff.JavaFF.arrayOfRPG(states.size());
             for(Object o : states) {
                 STRIPSState s = (STRIPSState) o;
-                s.setRPG(javaff.JavaFF.clonedRPG[i]);
+                if(s.goalReached()) {
+                    goalReached = s;
+                    return;
+                }
+
+                s.setRPG(rpgs[i]);
                 i++;
                 threads.add(new StateThread(s, original));
             }
@@ -37,10 +44,8 @@ public class MultiThreadStateManager {
         }
     }
 
-    public boolean finished() {
-        if(Thread.activeCount() < 2)
-            return true;
-        return false;
+    public javaff.planning.State goalReachedState() {
+        return goalReached;
     }
 
     public void join() {

@@ -4,6 +4,7 @@ import javaff.planning.State;
 import javaff.search.Search;
 import javaff.search.SuccessorSelector;
 import javaff.threading.MultiThreadStateManager;
+import javaff.threading.Pair;
 import javaff.threading.StateThread;
 import javaff.planning.Filter;
 import java.util.Set;
@@ -38,7 +39,7 @@ public class Identidem extends Search {
     private int iterations = 5;
     private int initialDepthBound = 10;
     private int probes = 10;
-    private int neighbourSize = javaff.JavaFF.MAX_THREAD_SIZE - 1;
+    private int neighbourSize = 3;
     private double maxBias = 1.5;
     
 	public Identidem(State s) {
@@ -72,13 +73,18 @@ public class Identidem extends Search {
                 double bias = maxBias;
                 for(int d = 0; d < depth; ++d) {
 
-                    Set actions = actionEvaluation(localMin, localMin.appliedAction);
+                    Set actions = neighbourSampling(localMin, localMin.appliedAction);
                     Set neighbour = localMin.getNextStates(actions);
                     State rpgState = ((STRIPSState) localMin).applyRPG();
                     MultiThreadStateManager manager = new MultiThreadStateManager(neighbour, ((STRIPSState) localMin).getRPG());
                     manager.start();
                     rpgState.getHValue();
                     manager.join();
+
+                    if(manager.goalReachedState() != null) {
+                        return manager.goalReachedState();
+                    }
+
                     neighbour.add(rpgState);
                     localMin = selector.choose(neighbour, bias);
 
@@ -87,13 +93,7 @@ public class Identidem extends Search {
                     }
                 }
 
-                failCount++;
-                if(failCount >= maxFailCount) {
-                    failCount = 0;
-                    restarts++;
-                    if(restarts % 3 == 0) {
-                        maxFailCount *= 2;
-                    }
+                if(shouldRestart()) {
                     return null;
                 }
 
@@ -104,6 +104,19 @@ public class Identidem extends Search {
         }
         System.out.println("Identidem failed");
         return null;
+    }
+
+    private synchronized boolean shouldRestart() {
+        failCount++;
+        if(failCount >= maxFailCount) {
+            failCount = 0;
+            restarts++;
+            if(restarts % 3 == 0) {
+                maxFailCount *= 2;
+            }
+            return true;
+        }
+        return false;
     }
 
     private void alternateFilter() {
@@ -123,7 +136,7 @@ public class Identidem extends Search {
         return y;
     }
 
-    private Set actionEvaluation(State s, Action p) {
+    private Set neighbourSampling(State s, Action p) {
         Set actions = filter.getActions(s);
         actions = goalRemovingFilter(s, actions);
         if(actions.size() <= neighbourSize) {
