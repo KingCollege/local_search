@@ -86,8 +86,11 @@ public class JavaFF {
 	public static PrintStream infoOutput = System.out;
 	public static PrintStream errorOutput = System.err;
 	public static RelaxedPlanningGraph[] clonedRPG;
-
 	public static GroundProblem ground = null;
+
+	public static String domainName;
+	public static String problemInstance;
+	public static File time = new File("../result.csv");
 
 	public static void main(String args[]) {
 		EPSILON = EPSILON.setScale(2, RoundingMode.HALF_EVEN);
@@ -101,6 +104,8 @@ public class JavaFF {
 		} else {
 			File domainFile = new File(args[0]);
 			File problemFile = new File(args[1]);
+			domainName = domainFile.getName();
+			problemInstance = problemFile.getName();
 			File solutionFile = null;
 			if (args.length > 2) {
 				generator = new Random(Integer.parseInt(args[2]));
@@ -201,9 +206,44 @@ public class JavaFF {
 
 		infoOutput.println("Instantiation Time =\t\t" + groundingTime + "sec");
 		infoOutput.println("Planning Time =\t" + planningTime + "sec");
+		if(top == null) {
+			writeTimePlanLengthToFile(planningTime, -1, time);
+		}else{
+			writeTimePlanLengthToFile(planningTime, top.getPlanLength(), time);
+		}
 		// infoOutput.println("Scheduling Time =\t"+schedulingTime+"sec");
 
 		return top;
+	}
+
+	private static void writeTimePlanLengthToFile(double time, int planLength, File fileOut) {
+		try {
+			FileOutputStream outputStream = new FileOutputStream(fileOut, true);
+			PrintWriter printWriter = new PrintWriter(outputStream);
+			String n = getProblemInstanceNumber(problemInstance);
+			if(planLength < 0) {
+				printWriter.write(n + "," + "N/A" + "," + planLength + "\n");
+			}else{
+				printWriter.write(n + "," + time + "," + planLength + "\n");
+			}
+
+			printWriter.close();
+		}catch(FileNotFoundException e){
+			errorOutput.println(e);
+		}
+	}
+
+	private static String getProblemInstanceNumber(String problem) {
+		String number = "";
+		for(int i = 9; i < problem.length() - 1; i++) {
+			try {
+				// instance-xx
+				int n = Integer.parseInt(problem.substring(i, i+1));
+				number += n;
+			} catch(Exception e){
+			}
+		}
+		return number;
 	}
 
 	private static void writePlanToFile(Plan plan, File fileOut) {
@@ -259,7 +299,7 @@ public class JavaFF {
 					goalState = initialState;
 				}
 			}
-			
+			if(goalState.goalReached()) {return goalState;}
 			// TIME OUT
 			double end = System.currentTimeMillis();
 			if(end - start >= 1800000) {
