@@ -8,6 +8,9 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.math.BigDecimal;
 
+// NOTE: This code was originally written for AIP Coursework.
+// It was a group project, so I cannot take credit for this peice of code.
+
 public class RouletteSelector implements SuccessorSelector {
 
 	private double bias = 1;
