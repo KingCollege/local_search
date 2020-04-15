@@ -18,12 +18,17 @@ ORIGINALDIR=$(pwd)
 PDDLFILE="pddl/$1"
 
 DOMAIN=$(ls $PDDLFILE | grep "domain")
-
+cd $BASEDIR/$PDDLFILE/instances
+TOTAL=$(ls -l | wc -l)
+TOTAL=$((TOTAL-1))
+echo $TOTAL
+START=1
+cd $ORIGINALDIR
 cd $BASEDIR/build
 
-for i in {1..10}
+for (( i=$START; i<=$TOTAL; i++ ))
 do
-    java javaff.JavaFF ../$PDDLFILE/$DOMAIN ../$PDDLFILE/instances/instance-$i.pddl 
+    java javaff.JavaFF ../$PDDLFILE/$DOMAIN ../$PDDLFILE/instances/instance-$i.pddl $2
 done
 
 cd $ORIGINALDIR
