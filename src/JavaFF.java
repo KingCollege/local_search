@@ -52,11 +52,10 @@ import javaff.threading.SearchType;
 import javaff.search.BestFirstSearch;
 import javaff.search.BestSuccessorSelector;
 import javaff.search.EnforcedHillClimbingSearch;
-import javaff.search.HeuristicModificationSearch;
 import javaff.search.HillClimbingSearch;
 import javaff.search.RouletteSelector;
 import javaff.search.Identidem;
-import javaff.genetics.*;
+import javaff.genetics.GeneticAlgorithm;
 
 
 import java.io.PrintStream;
@@ -78,7 +77,7 @@ public class JavaFF {
 	public static BigDecimal MAX_DURATION = new BigDecimal("100000"); // maximum duration in a duration constraint
 	public static int MAX_THREAD_SIZE = 4;
 	public static boolean VALIDATE = false;
-
+	public static double TIME_OUT = 1800000;
 	public static Random generator = null;
 
 	public static PrintStream planOutput = System.out;
@@ -87,7 +86,13 @@ public class JavaFF {
 	public static PrintStream errorOutput = System.err;
 	public static RelaxedPlanningGraph[] clonedRPG;
 	public static GroundProblem ground = null;
+	public static int seed = 0;
 
+	public enum AlgorithmType {
+		BEST, SA, GA, MULTIWALK, BASE, SINGLEWALK
+	}
+
+	public static String algorithmType="SA";
 	public static String domainName;
 	public static String problemInstance;
 	public static File time = new File("../result.csv");
@@ -100,6 +105,7 @@ public class JavaFF {
 
 		if (args.length < 2) {
 			System.out.println("Parameters needed: domainFile.pddl problemFile.pddl [random seed] [outputfile.sol");
+			// System.out.println("Algorithms:\nBase | Best | SA | GA | MultiWalk");
 
 		} else {
 			File domainFile = new File(args[0]);
@@ -108,8 +114,26 @@ public class JavaFF {
 			problemInstance = problemFile.getName();
 			File solutionFile = null;
 			if (args.length > 2) {
+				seed = Integer.parseInt(args[2]);
 				generator = new Random(Integer.parseInt(args[2]));
+				System.out.println(args[2]);
 			}
+
+			// if (args.length > 3) {
+			// 	algorithmType = args[3].toString();
+			// 	algorithmType = algorithmType.toUpperCase();
+			// 	boolean valid = false;
+			// 	for(int i = 0; i < AlgorithmType.values().length; i++) {
+			// 		if(algorithmType.equals(AlgorithmType.values()[i].toString())){
+			// 			valid = true;
+			// 		}
+			// 	}
+			// 	if(!valid) {
+			// 		System.out.println("Please choose valid algorithm:");
+			// 		System.out.println("Algorithms:\nBase | Best | SA | GA | MultiWalk");
+			// 		return;
+			// 	}
+			// }
 
 			if (args.length > 3) {
 				solutionFile = new File(args[3]);
@@ -123,18 +147,11 @@ public class JavaFF {
 		}
 	}
 
+	// Generate unique instances of RPG, used for parallelism
 	public static RelaxedPlanningGraph[] arrayOfRPG(int size) {
 		RelaxedPlanningGraph[] arry = new RelaxedPlanningGraph[size];
 		for(int i = 0; i < size; ++i) {
 			arry[i] = ground.getClone().getRPG();
-		}
-		return arry;
-	}
-
-	public static State[] arrayOfInitial(int size) {
-		State[] arry = new State[size];
-		for(int i = 0; i < size; ++i) {
-			arry[i] = ground.getClone();
 		}
 		return arry;
 	}
@@ -222,7 +239,7 @@ public class JavaFF {
 			PrintWriter printWriter = new PrintWriter(outputStream);
 			String n = getProblemInstanceNumber(problemInstance);
 			if(planLength < 0) {
-				printWriter.write(n + "," + "N/A" + "," + planLength + "\n");
+				printWriter.write(n + "," + "N/A" + "," + "N/A, " + n + ", " + time + "\n");
 			}else{
 				printWriter.write(n + "," + time + "," + planLength + "\n");
 			}
@@ -262,7 +279,8 @@ public class JavaFF {
 
 	}
 
-	public static State EHC(State initialState) {
+	// Single Walk Algorithm
+	public static State EHCSingleWalk(State initialState) {
 		State goalState = null;
 		EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
 		EHC.setFilter(HelpfulFilter.getInstance());
@@ -271,27 +289,33 @@ public class JavaFF {
 		return goalState;
 	}
 
-	public static State performFFSearch(TemporalMetricState initialState) {
-		// Identidem idtdm = new Identidem(initialState);
-		// System.out.println("Initial RPG: "+((STRIPSState) initialState).getRPG());
+	// Genetic Algorithm
+	public static State GA(State initialState){
+		GeneticAlgorithm GA = new GeneticAlgorithm(initialState);
+		State goalState = GA.search();
+		if(goalState != null && goalState.goalReached()) {
+			System.out.println("Valid Goal");
+		}
+		return goalState;
+	}
 
+	// Best performing algorithm - uses a combination of EHC single walk and
+	// identidem algorithm (single walk optimisation as well)
+	public static State BestPerforming(State initialState){
 		State goalState = initialState;
 		double start = System.currentTimeMillis();
-
+		Identidem IDTM = new Identidem(goalState);
+		IDTM.setStartTime(start);
 		while(!goalState.goalReached()) {
-			goalState = EHC(goalState);
+			goalState = EHCSingleWalk(goalState);
 			if(goalState.goalReached()) {return goalState;}
-			// 	// System.out.println("EHC failed, using Identidem");
-				
-			// GeneticAlgorithm GA = new GeneticAlgorithm(goalState);
-			// goalState = GA.search();
-
-			Identidem IDTM = new Identidem(goalState);
+			IDTM = new Identidem(goalState);
 			IDTM.setSelector(RouletteSelector.getInstance());
 			goalState = IDTM.search();
-
 			if(goalState == null) {
 				infoOutput.println("Identidem failed");
+				generator = new Random();
+				generator.setSeed(++seed);
 				IDTM = new Identidem(initialState);
 				IDTM.setSelector(RouletteSelector.getInstance());
 				goalState = IDTM.search();
@@ -302,14 +326,81 @@ public class JavaFF {
 			if(goalState.goalReached()) {return goalState;}
 			// TIME OUT
 			double end = System.currentTimeMillis();
-			if(end - start >= 1800000) {
+			if(end - start >= TIME_OUT) {
 				return null;
 			}
 		}
-
-
-		
 		return goalState;
+	}
 
+	// Simulated Annealing
+	public static State SA(State initialState) {
+		State goalState = initialState;
+		double start = System.currentTimeMillis();
+		SimulatedAnnealing SA = new SimulatedAnnealing(goalState);
+		SA.setFilter(NullFilter.getInstance());
+		SA.setStartTime(start);
+		SA.setSelector(RouletteSelector.getInstance());
+		SA.setTemperature(100);
+		SA.setAlpha(0.75);
+		SA.setMinTemp(0.1);
+		goalState = SA.search();
+		return goalState;
+	}
+
+	// Multi-Walk Algorithm
+	public static State MultiWalk(State initialState) {
+		State goalState = initialState;
+		Set states = goalState.getNextStates(NullFilter.getInstance().getActions(goalState));
+		MultiThreadSearchManager MTSM = new MultiThreadSearchManager(states);
+		MTSM.start();
+		goalState = MTSM.getBest();
+		return goalState;
+	}
+
+	// Base algorithm used in JavaFF
+	public static State baseAlgorithm(State initialState) {
+		State goalState = null;
+		double startTime = System.currentTimeMillis();
+		EnforcedHillClimbingSearch EHC = new EnforcedHillClimbingSearch(initialState);
+		EHC.setFilter(NullFilter.getInstance());
+		EHC.setStartTime(startTime);
+		goalState = EHC.baseEHC();
+
+		// if(goalState == null) {
+		// 	System.out.println("EHC failed, using BFS");
+		// 	BestFirstSearch BFS = new BestFirstSearch(initialState);
+		// 	BFS.setFilter(NullFilter.getInstance());
+		// 	BFS.setStartTime(startTime);
+		// 	goalState = BFS.search();
+		// }
+		return goalState;
+	}
+
+	public static State performFFSearch(TemporalMetricState initialState) {
+		// State goalState = SA(initialState);
+		System.out.println("Using " + algorithmType + " algorithm");
+		State goalState = null;
+		if(algorithmType.equals(AlgorithmType.BEST.toString())) {
+			goalState = BestPerforming(initialState);
+		}else if(algorithmType.equals(AlgorithmType.GA.toString())){
+			goalState = GA(initialState);
+		}
+		else if(algorithmType.equals(AlgorithmType.SA.toString())){
+			goalState=SA(initialState);
+		}
+		else if(algorithmType.equals(AlgorithmType.MULTIWALK.toString())){
+			goalState = MultiWalk(initialState);
+		}else if(algorithmType.equals(AlgorithmType.BASE.toString())){
+			goalState=baseAlgorithm(initialState);
+		}else if(algorithmType.equals(AlgorithmType.SINGLEWALK.toString())){
+			goalState = EHCSingleWalk(initialState);
+		}
+
+
+		if(goalState != null && goalState.goalReached()) {
+			return goalState;
+		}
+		return null;
 	}
 }

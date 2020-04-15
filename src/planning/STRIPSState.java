@@ -71,6 +71,7 @@ public class STRIPSState extends State implements Cloneable
 		plan = p;
 	}
 
+	// Copy necessary information to another state
 	public void copyInto(STRIPSState s) {
 		s.plan = plan;
 		s.HValue = HValue;
@@ -156,13 +157,12 @@ public class STRIPSState extends State implements Cloneable
 		}
 	}
 
-	//
+	// Applies helpful action from rpg - all applicable ones
 	public State applyRPG() {
 		State s = (State) this.clone();
 		// if (!RPCalculated) {
 		// 	calculateRP();
 		// }
-		// System.out.println(getHValue());
 		if(RelaxedPlan == null)
 			RelaxedPlan = (TotalOrderPlan) RPG.getPlan(s);
 		if (!(RelaxedPlan == null))
@@ -174,20 +174,12 @@ public class STRIPSState extends State implements Cloneable
 				if( a.isApplicable(s)) {
 					s = (STRIPSState) s.apply(a);
 					s.appliedAction = a;
-					
 					// s.RPCalculated = false;
 				}
-				// TODO: Test if breaking out early, increases performance
-				// else {break;}
 			}
 		}
 		// s.calculateRP();
 		return s;
-	}
-
-	public void setHValue(BigDecimal h) {
-		RPCalculated = true;
-		HValue = h;
 	}
 
 	public BigDecimal getHValue()

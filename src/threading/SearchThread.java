@@ -21,25 +21,29 @@ import javaff.search.EnforcedHillClimbingSearch;
 import javaff.search.Identidem;
 import javaff.search.RouletteSelector;
 
+// SearchThread - encapsulates a single search algorithm, given a
+// starting state and rpg
 public class SearchThread extends Thread {
     private javaff.planning.State start;
-    private int maxDepth;
     private javaff.planning.State goalState = null;
     private Set searchResult;
     private SearchType t = SearchType.SA;
+    private Hashtable closed;
+    private double startTime = -1;
 
     public SearchThread(javaff.planning.State start, RelaxedPlanningGraph rpg) {
         this.start = start;
-        this.maxDepth = 5;//30
         ((STRIPSState) this.start).setRPG(rpg);
         searchResult = new HashSet();
+        closed = new Hashtable();
     }
 
-    // Different types of search for each thread = Portfolio
+    // Sets algorithm to use
     public void setSearchType(SearchType st) {
         t = st;
     }
 
+    // Return goal state if achieved, otherwise null
     public javaff.planning.State getGoal() {
         if(goalState != null && goalState.goalReached()) {
             return goalState;
@@ -47,10 +51,19 @@ public class SearchThread extends Thread {
         return null;
     }
 
+    public void setStartTime(double s) {
+        startTime = s;
+    }
+
     public Set getResult() {
         return searchResult;
     }
 
+    public Hashtable getClosed() {
+        return closed;
+    }
+
+    // Selects search algorithm depending on chosen algorithm
     public void run() {
         // System.out.println(Thread.currentThread().getName() + ":" + ((STRIPSState) this.start).getRPG());
         try {
@@ -85,19 +98,24 @@ public class SearchThread extends Thread {
 
     private void enforcedHCSearch() {
         EnforcedHillClimbingSearch search = new EnforcedHillClimbingSearch(start);
-        search.setFilter(NullFilter.getInstance());
-        search.setBadEncounter(10);
-        goalState = search.search();
-        searchResult = new HashSet();
-        searchResult.add(goalState);
-        Search.history.putAll(search.getClosedList());
+        search.setFilter(HelpfulFilter.getInstance());
+        search.setBadEncounter(50);
+        search.setStartTime(startTime);
+        goalState = search.baseEHC();
+        // closed.putAll(search.getClosedList());
+        if(goalState != null) {
+            searchResult = new HashSet();
+            searchResult.add(goalState);
+        }
     }
 
+    // SA is optimised with parallelism, therefore to use this
+    // there needs to be enough computational power.
     private void simulatedAnnealing() {
         SimulatedAnnealing sa = new SimulatedAnnealing(start);
         sa.setFilter(HelpfulFilter.getInstance());
         sa.setSelector(RouletteSelector.getInstance());
-        sa.setTemperature(25);
+        sa.setTemperature(100);
         sa.setAlpha(0.9);
         sa.setMinTemp(0.1);
         sa.setIterations(10);
@@ -105,6 +123,8 @@ public class SearchThread extends Thread {
         searchResult.add(goalState);
     }
 
+    // Identidem is optimised with parallelism, therefore to use this
+    // there needs to be enough computational power
     private void identidem() {
         Identidem IDTM = new Identidem(start);
         IDTM.setSelector(RouletteSelector.getInstance());

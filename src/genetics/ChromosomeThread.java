@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-
 public class ChromosomeThread extends Thread {
     public Chromosome c = new Chromosome();
     private int length;
@@ -32,9 +31,10 @@ public class ChromosomeThread extends Thread {
 
     public void run() {
         try {
+            // Create a copy of initial state
             javaff.planning.State s = (javaff.planning.State)((STRIPSState) Chromosome.initialState).clone();
-            ((STRIPSState) s).setRPG(rpg); 
-            if(c.getGenes().size() == 0) {
+            ((STRIPSState) s).setRPG(rpg); // give it a unique rpg
+            if(c.getGenes().size() == 0) { // create chromosome
                 for(int i =0; i < length; i++) {
                     Action a = c.randomApplicableAction(s, -1);
                     if( a == null) {
@@ -45,7 +45,7 @@ public class ChromosomeThread extends Thread {
                 }
             }
             c.s = s;
-            c.calculateFitness();
+            c.getFitness(); // calculate fitness
             ((STRIPSState) c.s).setRPG(((STRIPSState) Chromosome.initialState).getRPG());
             // System.out.println(java.lang.Thread.currentThread().getName()+ ":\nInit: "+ c.s) ;
         } catch (Exception e) {

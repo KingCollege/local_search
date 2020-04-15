@@ -20,16 +20,21 @@ import javaff.planning.State;
 
 import javaff.search.Search;
 import javaff.threading.MultiThreadStateManager;
-import javaff.threading.Pair;
 import javaff.search.BestFirstSearch;
 import javaff.search.BreadthFirstSearch;
 import javaff.search.EnforcedHillClimbingSearch;
 import javaff.search.RouletteSelector;
 
+// EHCMultiStateEvaluation - a special case of multiple state
+// evaluations. Used in EHC.
+// Evaluates neighbouring states in parallel, continues until
+// all neighbours are evaluated or a strictly better state has been found beforehand.
 public class EHCMultiStateEvaluation extends Thread {
+    // limit for EHC single walk
     public static int MAX_LIMIT = 50;
     public static int LIMIT = 0;
 
+    // Concurrent state evaluation size
     private int concurrentEvaluationSize = 3;
     private Set notDone;
     private MultiThreadStateManager MTSM = null;
@@ -62,6 +67,8 @@ public class EHCMultiStateEvaluation extends Thread {
         notDone.add(s);
     }
 
+    // Keeps thread alive, as long as the algorithm still has
+    // state not evaluated (notDone set). 
     public void run() {
         try {
             while(notDone.size() > 0) {
@@ -72,6 +79,7 @@ public class EHCMultiStateEvaluation extends Thread {
                     subset.add(itr.next());
                     counter++;
                 }
+                // Terminates early if better state found
                 boolean result = calculateHeuristic(subset);
                 if(result) {
                     break;
@@ -82,10 +90,12 @@ public class EHCMultiStateEvaluation extends Thread {
         }
     }
 
+    // Returns best greedy state
     public javaff.planning.State getEHCBest() {
         return ehcBest;
     }
     
+    // Returns all states if no strictly better state found
     public Set getOpen() {
         if(ehcBest == null) {
             return notDone;
@@ -93,18 +103,20 @@ public class EHCMultiStateEvaluation extends Thread {
         return new HashSet();
     }
 
+    // returns true, if a strictly better state is found
     private boolean calculateHeuristic(Set states) {
         if(original == null) {
             System.out.println("Requires rpg");
             return true;
         }
         
+        // create state evaluation manager
         MTSM = new MultiThreadStateManager(states, original);
-        MTSM.start();
-        MTSM.join();
+        MTSM.start();// start evaluation
+        MTSM.join();// wait to finish
 
         if(MTSM.goalReachedState() != null) {
-            ehcBest = MTSM.goalReachedState();
+            ehcBest = MTSM.goalReachedState(); // goal?
             return true;
         }
 
@@ -112,12 +124,13 @@ public class EHCMultiStateEvaluation extends Thread {
         while(itr.hasNext()) {
             javaff.planning.State s = (javaff.planning.State) itr.next();
             if(s.getHValue().compareTo(initialH) < 0) {
-                ehcBest = s;
+                ehcBest = s; // strictly better state found
                 return true;
             }
         }
 
-        LIMIT += concurrentEvaluationSize;
+        LIMIT += concurrentEvaluationSize; // If no better state found still
+        // increase the number of bad encounters
         if(LIMIT >= MAX_LIMIT) {
             return true;
         }

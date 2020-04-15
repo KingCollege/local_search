@@ -32,7 +32,8 @@ public class SimulatedAnnealing extends Search {
 	protected double minTemp = 0.001;
 	protected double tempAlpha = 0.9;
 	protected double iterations = 20;
-	protected int neighbourSize = 6;
+	protected int neighbourSize = 3;
+	protected double bestH = javaff.JavaFF.MAX_DURATION.doubleValue();
 
 	public SimulatedAnnealing(State s) {
 		this(s, new HValueComparator());
@@ -57,31 +58,19 @@ public class SimulatedAnnealing extends Search {
 	}
 
 	public double acceptanceProbability(double currentE, double neighbourE, double temperature){
-		if (currentE > neighbourE)
+		if (currentE > neighbourE) {
 			return 1;
+		}
 		return Math.exp(-(neighbourE - currentE) / temperature);
 	}
-
+	
+	// gets neighbour of current state
 	public Set neighbourGeneration(State s){
 		Set successors = s.getNextStates(filter.getActions(s));
-		for(Object o: successors) {
-			State succ = (State) o;
-			historyCheck(succ);
-		}
 		return successors;
 	}
 
-	public boolean historyCheck(State s) {
-		Integer hash = Integer.valueOf(s.hashCode());
-		State D = (State) history.get(hash);
-		if(history.contains(hash) && D.equals(s)) {
-			((STRIPSState) D).copyInto((STRIPSState)s);
-			return true;
-		}
-		
-		return false;
-	}
-
+	// sample a small subset of neighbours from the full set of neighbour
 	private Set neighbourSampling(State s, Action p) {
         Set actions = filter.getActions(s);
         if(actions.size() <= neighbourSize) {
@@ -122,35 +111,83 @@ public class SimulatedAnnealing extends Search {
         return neighbourActions;
     }
 
+	// Reheating with respect to 2 + fitness of selected state
+	private void fitnessReheating(double heuristic) {
+		double fitness = 0;
+		if(heuristic > 0) {
+			fitness = 1/heuristic;
+		}
+		temperature += temperature * (2 + fitness);
+	}
+
+	private void geometricCooling() {
+		temperature *= tempAlpha;
+	}
+
+	// Reheating based on alpha, b determines how much reheating
+	private void alphaReheating(double b) {
+		temperature /= Math.pow(tempAlpha, b);
+	}
+
+	public void setStartTime(double s) {
+		startTime = s;
+	}
+
+	public boolean timeOut() {
+		if(startTime < 0) {
+			return false;
+		}
+		double endTime = System.currentTimeMillis();
+		if(endTime - startTime >= javaff.JavaFF.TIME_OUT) {
+			return true;
+		}
+		return false;
+	}
+
 	public State search(){
 		State currentOptimum = start;
-
+		Set actions = new HashSet();
+		Set n = new HashSet();
+		double previous = 0.0; // Force selection
 		while (temperature > minTemp){
-			Set actions = neighbourSampling(currentOptimum, currentOptimum.appliedAction);
-			Set n = currentOptimum.getNextStates(actions);
+			// sample neighbours
+			actions = neighbourSampling(currentOptimum, currentOptimum.appliedAction);
+			previous = 0.0;
+			n = currentOptimum.getNextStates(actions);
 			State rpgState = ((STRIPSState) currentOptimum).applyRPG();
+			// use parallel state evaluation
 			MultiThreadStateManager manager = new MultiThreadStateManager(n, ((STRIPSState) currentOptimum).getRPG());
 			manager.start();
 			rpgState.getHValue();
 			manager.join();
-			double r = javaff.JavaFF.generator.nextDouble();
+			n.add(rpgState);
 
-			for (int i =0; i < iterations; ++i){
+			double currentE = currentOptimum.getHValue().doubleValue();
+			double selectedE = 0;
+			while(true) {
+				double r = javaff.JavaFF.generator.nextDouble();
 				State selected = selector.choose(n);
-				double currentE = currentOptimum.getHValue().doubleValue();
-				double selectedE = selected.getHValue().doubleValue();
-				double acceptanceProb = acceptanceProbability(currentE, selectedE, temperature);
-				
+				selectedE = selected.getHValue().doubleValue();
+				double acceptanceProb = acceptanceProbability(currentE, selectedE, temperature); //get acceptance probability
+				previous += acceptanceProb;	//increment selected probability each iteration, force selection
 				if (selected.goalReached()){
 					return selected;
 				}
 				
-				if (r < acceptanceProb) {
+				if (r < previous) {
 					currentOptimum = selected;
+					break;
 				}
 			}
+			if(currentE >= selectedE) {
+				geometricCooling();
+			}else{
+				// fitnessReheating(selectedE);
+				alphaReheating(3);
+				// System.out.println(temperature);
+			}
 
-			temperature *= tempAlpha;
+			if(timeOut()) return currentOptimum;
 		}
 
 		return currentOptimum;

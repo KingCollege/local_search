@@ -39,7 +39,7 @@ import java.util.Iterator;
 public abstract class State implements Cloneable
 {
 	public GroundCondition goal;
-	public Action appliedAction = null;
+	public Action appliedAction = null; // keeps track of action that reached this state
 	// debug
 	public Boolean hCalculated = false;
 //	public Filter filter = null;
@@ -86,7 +86,6 @@ public abstract class State implements Cloneable
 		return s;
 	}
 
-	public abstract void setHValue(BigDecimal h);
 	public abstract BigDecimal getHValue();
 	public abstract BigDecimal getGValue();
 

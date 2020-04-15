@@ -42,6 +42,7 @@ public class BestFirstSearch extends Search
 	protected TreeSet open;
 	protected Filter filter = null;
 	protected int maxDepth = -1;
+	private double startTime = -1;
 
 	public BestFirstSearch(State s)
     {
@@ -101,6 +102,21 @@ public class BestFirstSearch extends Search
 		return true;
 	}
 
+	public void setStartTime(double s) {
+		startTime = s;
+	}
+
+	public boolean timeOut(){
+		if(startTime < 0) {
+			return false;
+		}
+		double endTime = System.currentTimeMillis();
+		if(endTime - startTime >= javaff.JavaFF.TIME_OUT) {
+			return true;
+		}
+		return false;
+	}
+
 	public State search() {
 		
 		open.add(start);
@@ -120,6 +136,9 @@ public class BestFirstSearch extends Search
 				d++;
 				if(d == maxDepth)
 					return s;
+			}
+			if(timeOut()) {
+				return null;
 			}
 			
 		}

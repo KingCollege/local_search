@@ -1,31 +1,3 @@
-/************************************************************************
- * Strathclyde Planning Group,
- * Department of Computer and Information Sciences,
- * University of Strathclyde, Glasgow, UK
- * http://planning.cis.strath.ac.uk/
- * 
- * Copyright 2007, Keith Halsey
- * Copyright 2008, Andrew Coles and Amanda Smith
- *
- * (Questions/bug reports now to be sent to Andrew Coles)
- *
- * This file is part of JavaFF.
- * 
- * JavaFF is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- * 
- * JavaFF is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with JavaFF.  If not, see <http://www.gnu.org/licenses/>.
- * 
- ************************************************************************/
-
 package javaff.search;
 
 import javaff.planning.State;
@@ -54,7 +26,7 @@ public class EnforcedHillClimbingSearch extends Search {
 
 	protected Set subGoalsReached;
 	protected boolean searchForSubGoal = true;
-	protected int maxBadEncounter = 50;
+	protected int maxBadEncounter = -1;
 
 	public EnforcedHillClimbingSearch(State s) {
 		this(s, new HValueComparator());
@@ -85,12 +57,23 @@ public class EnforcedHillClimbingSearch extends Search {
 		history = hs;
 	}
 
-	public void setStartingState(State s) {
-		start = s;
-	}
-
 	public void setFilter(Filter f) {
 		filter = f;
+	}
+
+	public void setStartTime(double s) {
+		startTime = s;
+	}
+
+	public boolean timeOut(){
+		if(startTime < 0) {
+			return false;
+		}
+		double endTime = System.currentTimeMillis();
+		if(endTime - startTime >= javaff.JavaFF.TIME_OUT) {
+			return true;
+		}
+		return false;
 	}
 
 	public State removeNext() {
@@ -111,6 +94,7 @@ public class EnforcedHillClimbingSearch extends Search {
 		return true; 
 	}
 
+	// Returns a set of already achieved goals for a state s
 	public Set reachedSubGoals(State s) {
 		if(!searchForSubGoal)
 			return new HashSet();
@@ -126,6 +110,7 @@ public class EnforcedHillClimbingSearch extends Search {
 		return reached;
 	}
 
+	// Remove neighbours that removes already achieved goal propositions
 	public Set filterGoalRemovingState(Set states) {
 		Set filtered = new HashSet();
 		for(Object s: states) {
@@ -138,6 +123,7 @@ public class EnforcedHillClimbingSearch extends Search {
 		return filtered;
 	}
 
+	// Check if state has been seen before from previous search algorithms
 	public boolean historyCheck(State s) {
 		Integer hash = Integer.valueOf(s.hashCode());
 		State D = (State) history.get(hash);
@@ -148,8 +134,54 @@ public class EnforcedHillClimbingSearch extends Search {
 		return false;
 	}
 
+
+	// EHC, depth bound.
+	public State baseEHC() {
+		if (start.goalReached()) {
+			return start;
+		}
+		needToVisit(start);
+		open.add(start);
+		int depth = 0;
+		bestHValue = start.getHValue(); 
+		while (!open.isEmpty()) {	
+			State s = removeNext();
+			Set successors = s.getNextStates(filter.getActions(s)); 
+			Iterator succItr = successors.iterator();			
+			while (succItr.hasNext()) {
+				State succ = (State) succItr.next();
+				// historyCheck(succ); 
+				if (needToVisit(succ)) {
+					if (succ.goalReached()) {
+						return succ;
+					} else if (succ.getHValue().compareTo(bestHValue) < 0) {
+						bestHValue = succ.getHValue();
+						open = new LinkedList();
+						open.add(succ);
+						break;
+					} else {
+						open.add(succ);
+					}
+				}
+			}
+			// Here badEncounter acts as a depth counter
+			if(maxBadEncounter != -1) {
+				depth++;
+				if(depth >= maxBadEncounter){
+					return s;
+				}
+			}
+			if(timeOut()) {
+				return null;
+			}
+		}
+		return null;
+	}
+
+	// EHC single walk
 	public State search() {
-		EHCMultiStateEvaluation.MAX_LIMIT = maxBadEncounter;
+		maxBadEncounter = 50; // A counter for the number of times a better state wasn't found
+		EHCMultiStateEvaluation.MAX_LIMIT = maxBadEncounter; //same as above, used for parallelism
 
 		if (start.goalReached()) {
 			return start;
@@ -164,13 +196,11 @@ public class EnforcedHillClimbingSearch extends Search {
 			s = removeNext(); 
 			Set actions = filter.getActions(s);
 			Set successors = s.getNextStates(actions);
-
-			// TO DO: This seems to give a better solution than average: Test this.
 			subGoalsReached = reachedSubGoals(s);
 			successors = filterGoalRemovingState(successors);
 			
-			State helpfulState = ((STRIPSState) s).applyRPG();
-			if(helpfulState.goalReached()) {
+			State helpfulState = ((STRIPSState) s).applyRPG(); //Get look-a-head state by applying all helpful actions
+			if(helpfulState.goalReached()) { //if this achieves goal or is a better state
 				return helpfulState;
 			}
 			if(helpfulState.getHValue().compareTo(bestHValue) < 0) {
@@ -179,23 +209,25 @@ public class EnforcedHillClimbingSearch extends Search {
 				open = new LinkedList();
 				open.add(bestState);
 			}else {
-				EHCMultiStateEvaluation evaluator = new EHCMultiStateEvaluation(successors, bestHValue);
+				// if look-a-head didnt help, back to normal EHC optimised with parallelism
+				EHCMultiStateEvaluation evaluator = new EHCMultiStateEvaluation(successors, bestHValue); 
 				evaluator.setRPG(((STRIPSState) bestState).getRPG());
-				evaluator.start();
+				evaluator.start();//calls multi-threading
 				try {
-					evaluator.join();
+					evaluator.join();//wait for them to finish
 				} catch (Exception e) {
 					System.out.println("EHC error: " + e);
 				}
-	
+				// If a better state has been found
 				if(evaluator.getEHCBest() != null) {
 					bestState = evaluator.getEHCBest();
 					bestHValue = bestState.getHValue();
 					open = new LinkedList();
 					open.add(bestState);
-				}else{
+				}else{ // otherwise, add all neighbour to open list
 					open.addAll(evaluator.getOpen());
 				}
+				// Terminate search once maximum number of bad encounters has been reached
 				if(EHCMultiStateEvaluation.LIMIT >= maxBadEncounter) {
 					EHCMultiStateEvaluation.LIMIT = 0;
 					return bestState;
@@ -207,29 +239,3 @@ public class EnforcedHillClimbingSearch extends Search {
 		return bestState;
 	}
 }
-
-			// successors.add(((STRIPSState) s).applyRPG());
-			// Iterator succItr = successors.iterator();
-			
-			// while (succItr.hasNext()) {
-			// 	State succ = (State) succItr.next();
-			// 	if (needToVisit(succ)) {
-			// 		if (succ.goalReached()) { 
-			// 			return succ;
-			// 		} else if (succ.getHValue().compareTo(bestHValue) < 0) {
-			// 			bestState = succ;
-			// 			bestHValue = succ.getHValue(); 
-			// 			open = new LinkedList(); 
-			// 			open.add(succ);
-			// 			break; 
-			// 		} else { 
-			// 			open.add(succ);
-			// 		}
-			// 	}
-			// 	if(open.size() > 1 ) {
-			// 		badEncounters++;
-			// 		if(badEncounters >= maxBadEncounter) {
-			// 			return bestState;
-			// 		}
-			// 	}
-			// }

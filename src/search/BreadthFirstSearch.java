@@ -73,6 +73,7 @@ public class BreadthFirstSearch extends Search
 
 	public void updateOpen(State S)
     {
+		// filter successors
 		Set successors = S.getNextStates(filter.getActions(S));
 		subGoalsReached = reachedSubGoals(S);
 		successors = filterGoalRemovingState(successors);
@@ -97,6 +98,7 @@ public class BreadthFirstSearch extends Search
 		return true;
 	}
 
+	// Check goals reached by a state
 	public Set reachedSubGoals(State s) {
 		STRIPSState strip = (STRIPSState) s;
 		Set goals = s.goal.getConditionalPropositions();
@@ -110,6 +112,7 @@ public class BreadthFirstSearch extends Search
 		return reached;
 	}
 
+	// Remove states that undo goal propositions
 	public Set filterGoalRemovingState(Set states) {
 		Set filtered = new HashSet();
 		for(Object s: states) {
@@ -138,14 +141,13 @@ public class BreadthFirstSearch extends Search
 					updateOpen(s);
 				}
 			}
-
+			// Depth bound
 			if(maxDepth != -1) {
 				depth++;
 				if(depth == maxDepth)
 					return s;
 			}
 		}
-		// System.out.println("BFS returns s");
 		return s;
 	}
 }

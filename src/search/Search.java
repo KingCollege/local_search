@@ -42,6 +42,7 @@ public abstract class Search
 	protected State start;
 	protected int nodeCount = 0;
 	protected Comparator comp;
+	protected double startTime=-1;
 
 	public Search(State s)
 	{

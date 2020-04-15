@@ -19,6 +19,7 @@ public class RouletteSelector implements SuccessorSelector {
 		return rs;
 	}
 
+	// Roulette selection with bias
 	public State choose(Set toChooseFrom, double bias) {
 		this.bias = bias;
 		return choose(toChooseFrom);
@@ -26,40 +27,33 @@ public class RouletteSelector implements SuccessorSelector {
 
 	public State choose(Set toChooseFrom) {
 		if (toChooseFrom.isEmpty()) {
-			// System.out.println("Empty");
 			return null;
 		}
-		// System.out.println(toChooseFrom.size());
 		Iterator itr = toChooseFrom.iterator();
 		double segmentSum = 0;
-		while (itr.hasNext()) {
+		while (itr.hasNext()) { // calculate fitness sum
 			State succ = (State) itr.next();
 			double h = succ.getHValue().doubleValue();
 			if (toChooseFrom.size() < 2) {
 				return succ;
 			}
-
 			if (succ.goalReached()) {
 				return succ;
 			}
-
 			segmentSum += Math.pow(1/h, bias);
 		}
-		double randomSeg = javaff.JavaFF.generator.nextDouble() * segmentSum;
+		double randomSeg = javaff.JavaFF.generator.nextDouble() * segmentSum;// randomly select segment
 		double previousProb = 0;
 		itr = toChooseFrom.iterator();
 		while (itr.hasNext()) {
 			State succ = (State) itr.next();
 			double h = succ.getHValue().doubleValue();
-			double fitness = Math.pow(1/h, bias);
+			double fitness = Math.pow(1/h, bias); 
 			previousProb += fitness;
-			// System.out.println("segment: " + h);
 			if (randomSeg < previousProb) {
 				return succ;
 			}
 		}
-		
-		javaff.JavaFF.infoOutput.println("Why am I here");
 		return null;
 	};
 

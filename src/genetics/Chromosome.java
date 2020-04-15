@@ -74,10 +74,10 @@ public class Chromosome {
             if(applicable) {
                 s = s.apply(a);
                 plan.addAction(a);
-                if(s.goalReached()) {
+                if(s.goalReached()) { // if a subset of genes produces a valid plan, give maximum fitness
                     fitness = 1;
                     isValidPlan = true;
-                    System.out.print(s.getSolution().getActions().size()  + ",");
+                    // System.out.print(s.getSolution().getActions().size()  + ",");
                     plan = (TotalOrderPlan) s.getSolution();
                     return;
                 }
@@ -85,7 +85,7 @@ public class Chromosome {
         }
         BigDecimal h = s.getHValue();
         if(h.doubleValue() == 0) {
-            fitness = 1;
+            fitness = 1; // if h has lowest possible heuristic, give maximum fitness
         }else{
             fitness = 1/h.doubleValue();
         }
@@ -123,13 +123,13 @@ public class Chromosome {
     // For each 1 in mask, a random action is selected from current time step of state. For each 0 in
     // mask, check if current action is still applicable, if so keep it, if not get a random applicable action.
     public Chromosome mutation(char[] mask) {
-        ArrayList child = new ArrayList();
+        ArrayList child = new ArrayList(); // create empty child
         State st = (State)((STRIPSState) initialState).clone();
         for(int i=0; i < mask.length; i++) {
             if(mask[i] == '1') {
-                Action a = randomApplicableAction(st, i);
+                Action a = randomApplicableAction(st, i); // mutate a gene, by removing the original
                 if(a == null) {
-                    continue;
+                    continue; // if this gene can't be mutated
                 }
                 child.add(a);
                 st = st.apply(a);
@@ -137,9 +137,9 @@ public class Chromosome {
                 Action a = (Action) genes.get(i);
                 if(a.isApplicable(st)){
                     child.add(genes.get(i));
-                    st = st.apply((Action) genes.get(i));
+                    st = st.apply((Action) genes.get(i)); // if original gene still works
                 }else{
-                    a = randomApplicableAction(st, -1);
+                    a = randomApplicableAction(st, -1); // if original gene doesn't work anymore
                     if(a == null) {
                         continue;
                     }
@@ -157,17 +157,17 @@ public class Chromosome {
     public Action randomApplicableAction(State s, int exception) {
         List actions = new ArrayList(filter.getActions(s));
         if(actions.size() ==0) {
-            return null;   
+            return null;  // if no more actions can be applied   
         }
 
-        if(exception > 0){
-            actions.remove(genes.get(exception));
+        if(exception > 0) { 
+            actions.remove(genes.get(exception)); // remove gene 
             if(actions.size() == 0){
                 return (Action) genes.get(exception);
             }
         }
 
-        int random = javaff.JavaFF.generator.nextInt(actions.size());
+        int random = javaff.JavaFF.generator.nextInt(actions.size()); // random
         return (Action) actions.get(random);
     }
 
@@ -179,7 +179,7 @@ public class Chromosome {
         for(Object g: genes) {
             Action a = (Action) g;
             Boolean applicable = a.isApplicable(s);
-            if(applicable) {
+            if(applicable) { // removes any inapplicable genes
                 s = s.apply(a);
                 nGene.add(a);
             }
@@ -196,7 +196,7 @@ public class Chromosome {
 
         for(int i = 0; i < diff; i++) {
             Action a = randomApplicableAction(s, -1);
-            if(a == null) {
+            if(a == null) { // if no more actions can be applied
                 break;
             }
             s = s.apply(a);

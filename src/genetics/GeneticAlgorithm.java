@@ -26,8 +26,8 @@ public class GeneticAlgorithm {
     private int maxConcurrency = 6;
     private double mutationRate = 0.1;
     private double crossOverRate = 0.8;
-    private double keepRate = 0.2;
-    private int populationSize = 20;
+    private double keepRate = 0.8;
+    private int populationSize = 100;
     private int generations = 200;
     private State best = null;
 
@@ -39,10 +39,13 @@ public class GeneticAlgorithm {
         population = new ArrayList<Chromosome>();
     }
 
+    // Start search by generating population, then per generation perform
+    // selection, then cross-over, then mutation
     public State search() {
+        double start = System.currentTimeMillis();
         populate(populationSize);
         for (int i = 0; i < generations; i++) {
-            System.out.println("Generation: " + i);
+            // System.out.println("Generation: " + i);
             rouletteSelection();
             population = new ArrayList<Chromosome>(keeps);
             while (population.size() < populationSize) {
@@ -51,7 +54,10 @@ public class GeneticAlgorithm {
                 // System.out.println(population.size());
             }
             evaluatePopulation();
-
+            double end = System.currentTimeMillis();
+            if(end - start >= 1800000) {
+                return best;
+            }
         }
         return best;
     }
@@ -64,9 +70,11 @@ public class GeneticAlgorithm {
         int diff = 0;
         int threadSize = maxConcurrency;
         Set<Chromosome> pop = new HashSet<Chromosome>();
+        // Can't use multi-threading to create all chromosomes at once
         while (pop.size() < size) {
             thrds = new ArrayList<ChromosomeThread>();
             diff = size - population.size();
+            // Population doesn't divide into thread size exactly
             if (diff <= threadSize) {
                 threadSize = diff;
             }
@@ -107,14 +115,15 @@ public class GeneticAlgorithm {
             if(best == null){
                 best = c.s;
             }else{
+                // If chromosome is a plan, better than current plan
                 if(c.planFound()) {
                     if(best.goalReached() ) {
                         if(((TotalOrderPlan)best.getSolution()).getPlanLength() > c.plan.getPlanLength())
                             best = c.s;
-                    }else{
+                    }else{ // or best state is not a plan yet
                         best = c.s;
                     }
-                }else{
+                }else{ // if chromosome isn't a plan, and current best is also not a plan
                     if(!best.goalReached()) {
                         if(best.getHValue().compareTo(c.s.getHValue()) < 0) {
                             best = c.s;
@@ -136,7 +145,7 @@ public class GeneticAlgorithm {
                     break;
                 }
             }
-            if(k == null) {
+            if(k == null) { 
                 System.out.println(rouletteSum);
                 System.out.println(previous);
             }
@@ -151,10 +160,12 @@ public class GeneticAlgorithm {
     // some extra genes.
     public void crossover() {
         int bound = (int) (keeps.size() * crossOverRate);
+        bound = bound < 2? 2 : bound; //mininum 2 parents
         List<Chromosome> portion = keeps.subList(0, bound);
         for (int i = 0; i < portion.size() - 2; i += 2) {
             Chromosome longest = null;
             Chromosome shortest = null;
+            // find longest chromosome
             if (keeps.get(i).getGenes().size() >= keeps.get(i + 2).getGenes().size()) {
                 longest = keeps.get(i);
                 shortest = keeps.get(i + 2);
@@ -162,14 +173,17 @@ public class GeneticAlgorithm {
                 longest = keeps.get(i + 2);
                 shortest = keeps.get(i);
             }
+            // average heuristic of parents
             int averageH = (int) ((longest.getHValue() + shortest.getHValue()) / 2);
-            char[] mask = generateMask(longest.getGenes().size());
+            char[] mask = generateMask(longest.getGenes().size()); // generate mask with length equal to longest
+            // chromosome
 
-            Chromosome childL = new Chromosome(longest.getGenes());
-            Chromosome childR = shortest.crossOver(childL, mask);
+            Chromosome childL = new Chromosome(longest.getGenes()); // first child
+            Chromosome childR = shortest.crossOver(childL, mask); // cross over with shortest child
+            // this changes childL consequently
 
-            childR.condense();
-            childR.grow(childR.getGenes().size() + averageH);
+            childR.condense();// condense child
+            childR.grow(childR.getGenes().size() + averageH); // grow them with respect to average heuristic of parents
             childL.condense();
             childL.grow(childL.getGenes().size() + averageH);
 
@@ -187,6 +201,7 @@ public class GeneticAlgorithm {
     // Mutates some genes
     public void mutation() {
         int bound = (int) (keeps.size() * mutationRate);
+        bound = bound < 2? 2 : bound; //minimum two mutations
         List<Chromosome> portion =  keeps.subList(0, bound);
         for (Chromosome c : portion) {
             if (population.size() == populationSize) {
@@ -198,23 +213,22 @@ public class GeneticAlgorithm {
         }
     }
 
+    // Generate genetic operation masks
     private char[] generateMask(int length) {
         char[] mask = new char[length];
         for (int i = 0; i < length; i++) {
-            double sample = javaff.JavaFF.generator.nextDouble() * 0.8;
-            if(sample <= 0.2) {
-            mask[i] = '1';
-            }else{
-            mask[i] = '0';
-            }
-            // if (i < length / 4) {
-            //     mask[i] = '1';
-            // } else {
-            //     mask[i] = '0';
+            // double sample = javaff.JavaFF.generator.nextDouble() * 0.8;
+            // if(sample <= 0.2) {
+            // mask[i] = '1';
+            // }else{
+            // mask[i] = '0';
             // }
-            // System.out.print(mask[i]);
+            if (i < length / 8) { //static mask
+                mask[i] = '1';
+            } else {
+                mask[i] = '0';
+            }
         }
-        // System.out.println();
         return mask;
     }
 
@@ -222,12 +236,15 @@ public class GeneticAlgorithm {
     private void evaluatePopulation() {
         ArrayList<ChromosomeThread> states = new ArrayList<ChromosomeThread>();
         int diff= 0; int threadSize = maxConcurrency; int size =0; int index = 0;
+        // Can't evaluate all chromosomes at once, therefore take subset of them
         while(size < population.size()) {
             states = new ArrayList<ChromosomeThread>();
             diff =  population.size() - size; 
+            // Population size does not divide evenly into maximum number of threads
             if(diff <= threadSize) {
                 threadSize = diff;
             }
+            // Create threads and start them
             RelaxedPlanningGraph[] rpg = javaff.JavaFF.arrayOfRPG(threadSize);
             for(int i =0; i< threadSize; i++) {
                 ChromosomeThread ct = new ChromosomeThread(0, rpg[i]);

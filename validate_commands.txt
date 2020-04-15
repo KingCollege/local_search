@@ -1,6 +1,7 @@
 VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\rovers\domain.pddl pddl\rovers\instances\instance-20.pddl plan.txt
-VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-15.pddl plan.txt
-VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\depots\domain.pddl pddl\depots\instances\instance-14.pddl plan.txt
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\driverlog\domain.pddl pddl\driverlog\instances\instance-1.pddl plan.txt
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\depots\domain.pddl pddl\depots\instances\instance-5.pddl plan.txt
+VAL_KCL\build\win64\mingw\Debug\bin\Validate pddl\pipesworld-notankage\domain.pddl pddl\pipesworld-notankage\instances\instance-21.pddl plan.txt
 
 VAL_KCL\samples\domainsWithEventsAndProcesses\Coffee\coffeemaking.pddl
 

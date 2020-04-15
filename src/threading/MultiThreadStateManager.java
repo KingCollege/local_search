@@ -12,6 +12,8 @@ import javaff.planning.State;
 import javaff.search.Search;
 import javaff.threading.StateThread;
 
+// MultiThreadStateManager - encapsulates a set of StateThreads
+// and kick start them all at once.
 public class MultiThreadStateManager {
     private Set states = null;
     private RelaxedPlanningGraph original = null;
@@ -27,6 +29,7 @@ public class MultiThreadStateManager {
         try {
             threads = new HashSet<StateThread>();
             int i =0;
+            // For each state thread object, a unique RPG is assigned.
             RelaxedPlanningGraph[] rpgs = javaff.JavaFF.arrayOfRPG(states.size());
             for(Object o : states) {
                 STRIPSState s = (STRIPSState) o;
@@ -43,7 +46,7 @@ public class MultiThreadStateManager {
             System.out.println( "Error from MultiThreadStateManager: "+e);
         }
     }
-
+    
     public javaff.planning.State goalReachedState() {
         return goalReached;
     }
