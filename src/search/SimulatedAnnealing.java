@@ -113,11 +113,11 @@ public class SimulatedAnnealing extends Search {
 
 	// Reheating with respect to 2 + fitness of selected state
 	private void fitnessReheating(double heuristic) {
-		double fitness = 0;
+		double fitness = 1;
 		if(heuristic > 0) {
 			fitness = 1/heuristic;
 		}
-		temperature += temperature * (2 + fitness);
+		temperature += temperature * (1 + fitness);
 	}
 
 	private void geometricCooling() {
@@ -182,8 +182,8 @@ public class SimulatedAnnealing extends Search {
 			if(currentE >= selectedE) {
 				geometricCooling();
 			}else{
-				// fitnessReheating(selectedE);
-				alphaReheating(3);
+				fitnessReheating(selectedE);
+				// alphaReheating(3);
 				// System.out.println(temperature);
 			}
 
