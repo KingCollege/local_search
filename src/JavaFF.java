@@ -92,7 +92,7 @@ public class JavaFF {
 		BEST, SA, GA, MULTIWALK, BASE, SINGLEWALK
 	}
 
-	public static String algorithmType="SA";
+	public static String algorithmType="GA";
 	public static String domainName;
 	public static String problemInstance;
 	public static File time = new File("../result.csv");
@@ -292,7 +292,12 @@ public class JavaFF {
 	// Genetic Algorithm
 	public static State GA(State initialState){
 		GeneticAlgorithm GA = new GeneticAlgorithm(initialState);
-		State goalState = GA.search();
+
+		State goalState = EHCSingleWalk(initialState);
+		if(goalState.goalReached())
+			return goalState;
+			
+		goalState = GA.search();
 		if(goalState != null && goalState.goalReached()) {
 			System.out.println("Valid Goal");
 		}

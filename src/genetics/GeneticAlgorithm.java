@@ -217,17 +217,17 @@ public class GeneticAlgorithm {
     private char[] generateMask(int length) {
         char[] mask = new char[length];
         for (int i = 0; i < length; i++) {
-            // double sample = javaff.JavaFF.generator.nextDouble() * 0.8;
-            // if(sample <= 0.2) {
-            // mask[i] = '1';
-            // }else{
-            // mask[i] = '0';
-            // }
-            if (i < length / 8) { //static mask
-                mask[i] = '1';
-            } else {
-                mask[i] = '0';
+            double sample = javaff.JavaFF.generator.nextDouble() * 0.8;
+            if(sample <= 0.2) {
+            mask[i] = '1';
+            }else{
+            mask[i] = '0';
             }
+            // if (i < length / 8) { //static mask
+            //     mask[i] = '1';
+            // } else {
+            //     mask[i] = '0';
+            // }
         }
         return mask;
     }
