@@ -1,11 +1,13 @@
 
 
 
-(define (problem mixed-f20-p10-u0-v0-g0-a0-n0-A0-B0-N0-F0-r4)
+(define (problem mixed-f22-p11-u0-v0-g0-a0-n0-A0-B0-N0-F0-r0)
    (:domain miconic)
-   (:objects p0 p1 p2 p3 p4 p5 p6 p7 p8 p9 - passenger
+   (:objects p0 p1 p2 p3 p4 p5 p6 p7 p8 p9 
+             p10 - passenger
              f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 
-             f10 f11 f12 f13 f14 f15 f16 f17 f18 f19 - floor)
+             f10 f11 f12 f13 f14 f15 f16 f17 f18 f19 
+             f20 f21 - floor)
 
 
 (:init
@@ -28,6 +30,8 @@
 (above f0 f17)
 (above f0 f18)
 (above f0 f19)
+(above f0 f20)
+(above f0 f21)
 
 (above f1 f2)
 (above f1 f3)
@@ -47,6 +51,8 @@
 (above f1 f17)
 (above f1 f18)
 (above f1 f19)
+(above f1 f20)
+(above f1 f21)
 
 (above f2 f3)
 (above f2 f4)
@@ -65,6 +71,8 @@
 (above f2 f17)
 (above f2 f18)
 (above f2 f19)
+(above f2 f20)
+(above f2 f21)
 
 (above f3 f4)
 (above f3 f5)
@@ -82,6 +90,8 @@
 (above f3 f17)
 (above f3 f18)
 (above f3 f19)
+(above f3 f20)
+(above f3 f21)
 
 (above f4 f5)
 (above f4 f6)
@@ -98,6 +108,8 @@
 (above f4 f17)
 (above f4 f18)
 (above f4 f19)
+(above f4 f20)
+(above f4 f21)
 
 (above f5 f6)
 (above f5 f7)
@@ -113,6 +125,8 @@
 (above f5 f17)
 (above f5 f18)
 (above f5 f19)
+(above f5 f20)
+(above f5 f21)
 
 (above f6 f7)
 (above f6 f8)
@@ -127,6 +141,8 @@
 (above f6 f17)
 (above f6 f18)
 (above f6 f19)
+(above f6 f20)
+(above f6 f21)
 
 (above f7 f8)
 (above f7 f9)
@@ -140,6 +156,8 @@
 (above f7 f17)
 (above f7 f18)
 (above f7 f19)
+(above f7 f20)
+(above f7 f21)
 
 (above f8 f9)
 (above f8 f10)
@@ -152,6 +170,8 @@
 (above f8 f17)
 (above f8 f18)
 (above f8 f19)
+(above f8 f20)
+(above f8 f21)
 
 (above f9 f10)
 (above f9 f11)
@@ -163,6 +183,8 @@
 (above f9 f17)
 (above f9 f18)
 (above f9 f19)
+(above f9 f20)
+(above f9 f21)
 
 (above f10 f11)
 (above f10 f12)
@@ -173,6 +195,8 @@
 (above f10 f17)
 (above f10 f18)
 (above f10 f19)
+(above f10 f20)
+(above f10 f21)
 
 (above f11 f12)
 (above f11 f13)
@@ -182,6 +206,8 @@
 (above f11 f17)
 (above f11 f18)
 (above f11 f19)
+(above f11 f20)
+(above f11 f21)
 
 (above f12 f13)
 (above f12 f14)
@@ -190,6 +216,8 @@
 (above f12 f17)
 (above f12 f18)
 (above f12 f19)
+(above f12 f20)
+(above f12 f21)
 
 (above f13 f14)
 (above f13 f15)
@@ -197,58 +225,78 @@
 (above f13 f17)
 (above f13 f18)
 (above f13 f19)
+(above f13 f20)
+(above f13 f21)
 
 (above f14 f15)
 (above f14 f16)
 (above f14 f17)
 (above f14 f18)
 (above f14 f19)
+(above f14 f20)
+(above f14 f21)
 
 (above f15 f16)
 (above f15 f17)
 (above f15 f18)
 (above f15 f19)
+(above f15 f20)
+(above f15 f21)
 
 (above f16 f17)
 (above f16 f18)
 (above f16 f19)
+(above f16 f20)
+(above f16 f21)
 
 (above f17 f18)
 (above f17 f19)
+(above f17 f20)
+(above f17 f21)
 
 (above f18 f19)
+(above f18 f20)
+(above f18 f21)
+
+(above f19 f20)
+(above f19 f21)
+
+(above f20 f21)
 
 
 
-(origin p0 f15)
-(destin p0 f11)
+(origin p0 f17)
+(destin p0 f10)
 
-(origin p1 f2)
-(destin p1 f0)
+(origin p1 f17)
+(destin p1 f13)
 
-(origin p2 f2)
-(destin p2 f18)
+(origin p2 f1)
+(destin p2 f15)
 
-(origin p3 f7)
-(destin p3 f5)
+(origin p3 f0)
+(destin p3 f6)
 
-(origin p4 f9)
-(destin p4 f4)
+(origin p4 f3)
+(destin p4 f1)
 
-(origin p5 f10)
-(destin p5 f9)
+(origin p5 f8)
+(destin p5 f7)
 
-(origin p6 f2)
-(destin p6 f19)
+(origin p6 f16)
+(destin p6 f3)
 
-(origin p7 f18)
-(destin p7 f13)
+(origin p7 f7)
+(destin p7 f4)
 
-(origin p8 f0)
-(destin p8 f13)
+(origin p8 f20)
+(destin p8 f10)
 
-(origin p9 f3)
-(destin p9 f9)
+(origin p9 f2)
+(destin p9 f0)
+
+(origin p10 f21)
+(destin p10 f8)
 
 
 
@@ -270,6 +318,7 @@
 (served p7)
 (served p8)
 (served p9)
+(served p10)
 ))
 )
 

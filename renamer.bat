@@ -1,5 +1,3 @@
-cd ../
-cd Classical_Domains/classical/%1/instances
 cls
 
 set /a COUNTER=0

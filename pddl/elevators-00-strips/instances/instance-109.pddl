@@ -1,7 +1,7 @@
 
 
 
-(define (problem mixed-f58-p29-u0-v0-g0-a0-n0-A0-B0-N0-F0-r2)
+(define (problem mixed-f58-p29-u0-v0-g0-a0-n0-A0-B0-N0-F0-r3)
    (:domain miconic)
    (:objects p0 p1 p2 p3 p4 p5 p6 p7 p8 p9 
              p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 
@@ -1727,92 +1727,92 @@
 
 
 
-(origin p0 f35)
-(destin p0 f28)
+(origin p0 f39)
+(destin p0 f33)
 
 (origin p1 f26)
-(destin p1 f44)
+(destin p1 f37)
 
-(origin p2 f55)
-(destin p2 f52)
+(origin p2 f11)
+(destin p2 f10)
 
-(origin p3 f42)
-(destin p3 f20)
+(origin p3 f27)
+(destin p3 f4)
 
-(origin p4 f39)
-(destin p4 f57)
+(origin p4 f57)
+(destin p4 f30)
 
-(origin p5 f54)
-(destin p5 f5)
+(origin p5 f5)
+(destin p5 f0)
 
-(origin p6 f19)
-(destin p6 f50)
+(origin p6 f34)
+(destin p6 f56)
 
-(origin p7 f52)
-(destin p7 f6)
+(origin p7 f38)
+(destin p7 f27)
 
-(origin p8 f35)
-(destin p8 f19)
+(origin p8 f30)
+(destin p8 f31)
 
-(origin p9 f48)
-(destin p9 f28)
+(origin p9 f40)
+(destin p9 f12)
 
-(origin p10 f31)
-(destin p10 f26)
+(origin p10 f52)
+(destin p10 f31)
 
-(origin p11 f20)
-(destin p11 f36)
+(origin p11 f24)
+(destin p11 f45)
 
-(origin p12 f5)
-(destin p12 f53)
+(origin p12 f12)
+(destin p12 f6)
 
-(origin p13 f16)
+(origin p13 f4)
 (destin p13 f2)
 
-(origin p14 f23)
-(destin p14 f47)
+(origin p14 f17)
+(destin p14 f35)
 
-(origin p15 f10)
-(destin p15 f51)
+(origin p15 f1)
+(destin p15 f56)
 
-(origin p16 f17)
-(destin p16 f36)
+(origin p16 f10)
+(destin p16 f19)
 
-(origin p17 f29)
-(destin p17 f7)
+(origin p17 f28)
+(destin p17 f14)
 
-(origin p18 f31)
-(destin p18 f13)
+(origin p18 f29)
+(destin p18 f55)
 
-(origin p19 f27)
-(destin p19 f4)
+(origin p19 f10)
+(destin p19 f29)
 
-(origin p20 f12)
-(destin p20 f15)
+(origin p20 f27)
+(destin p20 f16)
 
-(origin p21 f2)
-(destin p21 f24)
+(origin p21 f29)
+(destin p21 f53)
 
-(origin p22 f7)
-(destin p22 f54)
+(origin p22 f6)
+(destin p22 f2)
 
-(origin p23 f30)
-(destin p23 f42)
+(origin p23 f15)
+(destin p23 f29)
 
-(origin p24 f7)
-(destin p24 f12)
+(origin p24 f25)
+(destin p24 f55)
 
-(origin p25 f5)
-(destin p25 f30)
+(origin p25 f41)
+(destin p25 f20)
 
-(origin p26 f39)
-(destin p26 f17)
+(origin p26 f28)
+(destin p26 f8)
 
-(origin p27 f8)
-(destin p27 f44)
+(origin p27 f7)
+(destin p27 f33)
 
-(origin p28 f4)
-(destin p28 f25)
+(origin p28 f14)
+(destin p28 f11)
 
 
 

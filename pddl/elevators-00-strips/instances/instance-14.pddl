@@ -1,7 +1,7 @@
 
 
 
-(define (problem mixed-f22-p11-u0-v0-g0-a0-n0-A0-B0-N0-F0-r4)
+(define (problem mixed-f22-p11-u0-v0-g0-a0-n0-A0-B0-N0-F0-r3)
    (:domain miconic)
    (:objects p0 p1 p2 p3 p4 p5 p6 p7 p8 p9 
              p10 - passenger
@@ -265,38 +265,38 @@
 
 
 
-(origin p0 f15)
-(destin p0 f9)
+(origin p0 f13)
+(destin p0 f19)
 
-(origin p1 f14)
-(destin p1 f0)
+(origin p1 f6)
+(destin p1 f21)
 
-(origin p2 f18)
-(destin p2 f4)
+(origin p2 f1)
+(destin p2 f8)
 
-(origin p3 f16)
-(destin p3 f21)
+(origin p3 f17)
+(destin p3 f12)
 
-(origin p4 f21)
-(destin p4 f15)
+(origin p4 f15)
+(destin p4 f18)
 
-(origin p5 f8)
-(destin p5 f10)
+(origin p5 f9)
+(destin p5 f8)
 
-(origin p6 f17)
-(destin p6 f8)
+(origin p6 f6)
+(destin p6 f10)
 
-(origin p7 f21)
-(destin p7 f4)
+(origin p7 f18)
+(destin p7 f11)
 
-(origin p8 f19)
-(destin p8 f16)
+(origin p8 f8)
+(destin p8 f9)
 
-(origin p9 f5)
-(destin p9 f21)
+(origin p9 f14)
+(destin p9 f4)
 
-(origin p10 f19)
-(destin p10 f16)
+(origin p10 f14)
+(destin p10 f11)
 
 
 
