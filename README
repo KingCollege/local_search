@@ -1,3 +1,4 @@
-local search
+Use ./win_run.bat <domain> <seed> on Windows laptop. Or
+Use ./linux_run.sh <domain> <seed> on Linux systems, or ./build.sh, then ./run.sh
 
--XX:+UseSerialGC -Xmx2g -Xms32m 
+Script ./build.sh and ./run.sh was already provided. I did not extend or contribute to those scripts.
