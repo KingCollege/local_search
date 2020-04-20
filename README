@@ -1,4 +1,8 @@
 Use ./win_run.bat <domain> <seed> on Windows laptop. Or
 Use ./linux_run.sh <domain> <seed> on Linux systems, or ./build.sh, then ./run.sh
 
-Script ./build.sh and ./run.sh was already provided. I did not extend or contribute to those scripts.
+Script ./build.sh and ./run.sh was already provided. I did not extend or contribute to those scripts. Other scripts are extensions
+of ./build.sh file.
+
+If ./linux_run.sh or any script fails to run, please double check on VSCode that the formatting is CRLF for Windows systems and LF for
+linux systems. If formatting is wrong, then the script files might fail to run. This happened because the project was originally developed on Windows systems.
